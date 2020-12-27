@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "CommonJS",
+        "target": "ES6",
+        "esModuleInterop": true,
+        "noImplicitAny": true,
+        "removeComments": true,
+        "sourceMap": false,
+    },
+    "include": [
+        "index.ts"
+    ]
+}
