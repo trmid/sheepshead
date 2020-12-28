@@ -1,0 +1,47 @@
+#log{
+    max-height: 600px;
+    width: 500px;
+    overflow-y: auto;
+    border: 1px solid black;
+}
+
+#log table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#log th, #log td{
+    padding: 0.5em;
+    text-align: left;
+}
+
+#log th{
+    color: #888;
+}
+
+#log td.error{
+    color: crimson;
+}
+
+#log td.server{
+    color: dodgerblue;
+}
+
+#log tr:nth-child(odd){
+    background-color: #fafafa;
+}
+
+fieldset th, fieldset td{
+    padding: 0.2em;
+    text-align: left;
+}
+
+footer{
+    padding: 0.5em;
+    margin-top: 1em;
+}
+
+input, select, button{
+    padding: 0.4em;
+    margin: 0.5em;
+}

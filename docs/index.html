@@ -12,10 +12,50 @@
 <body>
     <header>
         <h1>Sheepshead</h1>
+        <p>4-Player Online Sheepshead Card Game</p>
     </header>
     <main>
-        <p>4-Player Online Sheepshead Card Game</p>
-
+        <form id="table-form" action="javascript:join_table();">
+            <fieldset>
+                <legend>Create or Join a Table</legend>
+                <table>
+                    <tr>
+                        <th>Name</th>
+                        <td><input type="text" id="table-name" placeholder="Table Name" required></td>
+                    </tr>
+                    <tr>
+                        <th>Password</th>
+                        <td><input type="password" id="table-password" placeholder="Table Password" required></td>
+                    </tr>
+                    <tr>
+                        <th>Join as</th>
+                        <td><input type="text" id="table-player" placeholder="Your Name" required></td>
+                    </tr>
+                    <tr>
+                        <th>Options</th>
+                        <td>
+                            <select id="table-options" required>
+                                <option value="join-table" selected>Join Table</option>
+                                <option value="create-table">Create and Join Table</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <td><input type="submit" value="Join" /></td>
+                    </tr>
+                </table>
+            </fieldset>
+        </form>
+        <h3>Log:</h3>
+        <div id="log">
+            <table>
+                <tr>
+                    <th>Begin Log...</th>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
     </main>
     <footer>
         &copy; 2020 Trevor Richard
