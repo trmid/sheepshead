@@ -1,6 +1,6 @@
 #log{
     max-height: 600px;
-    width: 500px;
+    width: 100%;
     overflow-y: auto;
     border: 1px solid black;
 }
@@ -17,6 +17,7 @@
 
 #log th{
     color: #888;
+    max-width: 4em;
 }
 
 #log td.error{
@@ -27,8 +28,20 @@
     color: dodgerblue;
 }
 
+#log td.game{
+    color: green;
+}
+
+#log td.strategy{
+    color: orange;
+}
+
 #log tr:nth-child(odd){
     background-color: #fafafa;
+}
+
+fieldset{
+    margin: 1em;
 }
 
 fieldset th, fieldset td{
@@ -44,4 +57,25 @@ footer{
 input, select, button{
     padding: 0.4em;
     margin: 0.5em;
+}
+
+#text-row{
+    width: 100%;
+    max-height: 200px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+
+    border: 1px solid black;
+    border-top: none;
+}
+
+#send-text{
+    flex-grow: 1;
+}
+
+#send-btn{
+    margin: 0;
 }

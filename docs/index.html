@@ -47,15 +47,37 @@
                 </table>
             </fieldset>
         </form>
-        <h3>Log:</h3>
-        <div id="log">
-            <table>
-                <tr>
-                    <th>Begin Log...</th>
-                    <td></td>
-                </tr>
-            </table>
-        </div>
+
+        <fieldset>
+            <legend>Log</legend>
+            <div id="log">
+                <table id="log-messages">
+                    <tr>
+                        <th>Begin Log...</th>
+                        <td></td>
+                    </tr>
+                </table>
+            </div>
+            <div id="text-row">
+                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..."></textarea>
+                <button id="send-btn">Send</button>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Round Options</legend>
+            <div id="round-options">
+
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>My Hand</legend>
+            <div id="hand">
+
+            </div>
+        </fieldset>
+
     </main>
     <footer>
         &copy; 2020 Trevor Richard
