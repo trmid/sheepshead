@@ -2,6 +2,7 @@ import express from 'express';
 import ws from 'ws';
 import mongo, { MongoError } from 'mongodb';
 import crypto from 'crypto';
+import e from 'express';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -331,7 +332,7 @@ class Round {
 
     }
 
-    play(card: string) {
+    async play(card: string) {
 
         const active_player = this.active_player();
         this.turn++;
@@ -343,44 +344,50 @@ class Round {
         if (this.turn % 4 == 0) {
             const suit = Table.suit_to_num(this.trick[0].card.charAt(1));
             const trump = Table.suit_to_num(this.trump());
+            const trump_played = suit == trump || Table.val_to_num(this.trick[0].card.charAt(0)) > 5;
             winner = this.trick.reduce((p, c) => {
                 const p_suit = Table.suit_to_num(p.card.charAt(1));
                 const p_val = Table.val_to_num(p.card.charAt(0));
                 const c_suit = Table.suit_to_num(c.card.charAt(1));
                 const c_val = Table.val_to_num(c.card.charAt(0));
-                if (c_suit != suit) {
-                    if (c_suit != trump) {
-                        return p; // not suited
-                    } else if (p_suit != trump) {
-                        return c; // trumped
-                    } else if (p_val > c_val) {
-                        return p; // greater trump
-                    } else {
-                        return c;
-                    }
-                } else if (suit == trump) {
-                    if (p_suit == trump) {
-                        // Both trump
-                        if (p_val > c_val) {
-                            return p;
-                        } else {
+                const p_is_trump = p_suit == trump || p_val > 5;
+                const c_is_trump = c_suit == trump || c_val > 5;
+
+                if (c_is_trump) {
+                    if (p_is_trump) {
+                        // both trump
+                        if (c_val == p_val) {
+                            if (c_suit > p_suit) {
+                                return c;
+                            } else {
+                                return p;
+                            }
+                        } else if (c_val > p_val) {
                             return c;
+                        } else {
+                            return p;
                         }
                     } else {
-                        // previous not trump
                         return c;
                     }
+                } else if (p_is_trump) {
+                    return p;
                 } else {
-                    if (p_suit == trump) {
-                        // trumped
-                        return p;
-                    } else {
-                        // Both are suited
-                        if (p_val > c_val) {
-                            return p;
+                    // both non-trump
+                    if (c_suit == suit) {
+                        if (p_suit == suit) {
+                            if (c_val > p_val) {
+                                return c;
+                            } else {
+                                return p;
+                            }
                         } else {
                             return c;
                         }
+                    } else if (p_suit == suit) {
+                        return p; // will prob never happen
+                    } else {
+                        return c; // also prob never gun happen
                     }
                 }
             }).player;
@@ -395,7 +402,8 @@ class Round {
             this.trick = new Array();
 
             // Check for first trick
-            if (this.first_trick && suit != trump) {
+            if (this.first_trick && !trump_played) {
+                this.first_trick = false;
                 if (winner == this.queens_player) {
                     this.team2 = this.table.players.filter(p => p != winner);
                 } else {
@@ -409,28 +417,128 @@ class Round {
 
         }
 
+        let payment = 0, winners: any, losers: any;
         if (this.turn == 32) {
             // Round over
 
-            let team1_points = 0;
-            this.team1.forEach(player => {
-                Array.from(player.collected.keys()).forEach(card => {
-                    team1_points += Table.card_val(card);
+            let teams = [
+                { players: this.team1, points: 0, trick: false, dealt: new Map<string, boolean>(), black_queens: false },
+                { players: this.team2, points: 0, trick: false, dealt: new Map<string, boolean>(), black_queens: false }
+            ];
+            teams.forEach(team => {
+                team.players.forEach(player => {
+                    Array.from(player.collected.keys()).forEach(card => {
+                        team.points += Table.card_val(card);
+                        team.trick = true;
+                    });
+                    Array.from(player.original_hand.keys()).forEach(card => {
+                        team.dealt.set(card, true);
+                    });
                 });
+                team.black_queens = !!(team.dealt.get('QS') && team.dealt.get('QC'));
             });
 
-            let team2_points = 0;
-            this.team2.forEach(player => {
-                Array.from(player.collected.keys()).forEach(card => {
-                    team2_points += Table.card_val(card);
-                });
-            });
+            const multiplier = 0.05;
 
-            let winning_team = team1_points > team2_points ? this.team1 : this.team2;
-            if (team1_points == team2_points) {
+            // Decide winners
+            if (teams[0].points == teams[1].points) {
                 // tie
-
+                if (this.solo) {
+                    // Non-solo is winner
+                    if (teams[0].players.length > 1) {
+                        winners = teams[0];
+                        losers = teams[1];
+                    } else {
+                        winners = teams[1];
+                        losers = teams[0];
+                    }
+                } else if (teams[0].black_queens) {
+                    // Team with Q's is winner
+                    winners = teams[0];
+                    losers = teams[1];
+                } else {
+                    winners = teams[1];
+                    losers = teams[0];
+                }
+            } else if (teams[0].points > teams[1].points) {
+                winners = teams[0];
+                losers = teams[1];
+            } else {
+                winners = teams[1];
+                losers = teams[0];
             }
+
+            // Calculate payment
+            if (this.solo) {
+                payment = 4 * multiplier;
+                if (!losers.trick && winners.players[0] == this.solo_player) {
+                    payment = 26 * multiplier; // solo do
+                } else if (winners.black_queens) {
+                    if (winners.dealt.get('QH')) {
+                        if (winners.dealt.get('QD')) {
+                            payment += 4 * multiplier;
+                        } else {
+                            payment += 3 * multiplier;
+                        }
+                    }
+                }
+            } else {
+                payment = 2 * multiplier;
+                if (losers.points < 31) payment += multiplier * 2 // no schneider
+                if (!losers.trick) payment += multiplier * 2; // no trick
+                if (winners.black_queens) {
+                    if (winners.dealt.get('QH')) {
+                        if (winners.dealt.get('QD')) {
+                            payment += multiplier * 4;
+                        } else {
+                            payment += multiplier * 3;
+                        }
+                    }
+                }
+            }
+
+            // Universal double if lose with black Q's
+            if (losers.black_queens) {
+                payment *= 2;
+            }
+
+            // Payment
+            if (this.solo && this.solo_player) {
+                if (winners.players[0] == this.solo_player) {
+                    this.solo_player.balance += losers.players.length * payment;
+                    losers.players.forEach((player: Player) => {
+                        player.balance -= payment;
+                    });
+                } else {
+                    this.solo_player.balance -= losers.players.length * payment;
+                    winners.players.forEach((player: Player) => {
+                        player.balance += payment;
+                    });
+                }
+            } else {
+                winners.players.forEach((player: Player) => {
+                    player.balance += payment;
+                });
+                losers.players.forEach((player: Player) => {
+                    player.balance -= payment;
+                });
+            }
+
+            // Update balances in database
+            try {
+                await db.collection('tables').updateOne({
+                    name: this.table.name
+                }, {
+                    $set: {
+                        players: this.table.players.map(p => { return { name: p.name, balance: p.balance }; })
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+            }
+
+            // Rotate Dealer
+            this.table.dealer++;
 
         }
 
@@ -446,10 +554,21 @@ class Round {
                 trick: trick,
                 my_hand: Array.from(player.hand.keys()),
                 winner: winner?.name,
+                payment: payment,
+                winners: winners ? { players: winners.players.map((p: Player) => { return { name: p.name, balance: p.balance }; }), points: winners.points } : undefined,
+                losers: losers ? { players: losers.players.map((p: Player) => { return { name: p.name, balance: p.balance }; }), points: losers.points } : undefined
             }));
         });
 
-        return Promise.all(messages);
+        const res = await Promise.all(messages);
+
+        // Start next round if this round is over
+        if (winners) {
+            this.table.start_round();
+        }
+
+        return res;
+
     }
 
     call(
@@ -530,6 +649,21 @@ class Round {
                 } else if (this.first_trick && this.queens_player) {
                     this.team1.push(this.queens_player);
                     // Other team is decided when trick is won
+                } else if (this.queens_player) {
+                    // Quiet solo
+                    this.solo = 'D';
+                    this.solo_player = this.queens_player;
+                    this.team1.push(this.queens_player);
+                    this.team2 = this.table.players.filter(p => p != this.queens_player);
+                } else {
+                    // Normal game
+                    this.table.players.forEach(player => {
+                        if (player.original_hand.get('QS') || player.original_hand.get('QC')) {
+                            this.team1.push(player);
+                        } else {
+                            this.team2.push(player);
+                        }
+                    });
                 }
 
                 // Start round
@@ -723,6 +857,7 @@ class Player {
     socket?: ws
     balance = 5.00;
     hand = new Map<string, boolean>();
+    original_hand = new Map<string, boolean>();
     collected = new Map<string, boolean>();
     table: Table
 
@@ -759,10 +894,12 @@ class Player {
 
     deal(cards: string[], player_turn: string) {
         if (cards.length != 8) throw new Error("Incorrect card hand size...");
+        this.original_hand.clear;
         this.hand.clear();
         this.collected.clear();
         cards.forEach(card => {
             this.hand.set(card, true);
+            this.original_hand.set(card, true);
         });
         return this.send({
             event: "deal",

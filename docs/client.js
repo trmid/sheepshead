@@ -63,6 +63,19 @@ window.addEventListener('load', () => {
                         log(`It is ${data.player_turn}'${data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's'} turn to play a card...`, 'game');
                     }
                     update_hand(data.my_hand);
+                    if (data.winners) {
+                        let winners = '';
+                        for (let i = 0; i < data.winners.players.length; i++) {
+                            winners += data.winners.players[i].name + (i < data.winners.players.length - 1 ? ', ' : '');
+                        }
+                        log(`${winners} ${data.winners.players.length > 1 ? 'have' : 'has'} won the round with ${data.winners.points} points! Winnings: $${data.payment.toFixed(2)}`, `strategy`);
+                        let balances = '';
+                        const players = data.winners.players.concat(data.losers.players);
+                        for (let i = 0; i < players.length; i++) {
+                            balances += `[${players[i].name}: $${players[i].balance.toFixed(2)}] `;
+                        }
+                        log(`Player Balances: ${balances}`, 'strategy');
+                    }
                     break;
                 case 'deal':
                     log(`Cards have been dealt!`, 'game');
