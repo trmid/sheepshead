@@ -135,8 +135,20 @@ function update_hand(cards) {
     const hand = document.getElementById("hand");
     hand.innerHTML = "";
     cards.forEach(card => {
-        const play_card = document.createElement("button");
-        play_card.innerHTML = card;
+        let val = card.charAt(0);
+        const suit = card.charAt(1);
+        if (val.toUpperCase() === 'T')
+            val = '10';
+        const play_card = document.createElement("div");
+        play_card.classList.add("card");
+        play_card.classList.add("playable");
+        play_card.classList.add(suit);
+        const value = document.createElement("div");
+        value.classList.add("card-value");
+        value.innerHTML = val;
+        play_card.append(value);
+        play_card.append(suit_img(suit));
+        play_card.append(suit_img(suit, true));
         play_card.addEventListener("click", () => {
             socket.send(JSON.stringify({
                 event: 'play-card',
@@ -145,6 +157,30 @@ function update_hand(cards) {
         });
         hand.append(play_card);
     });
+}
+function suit_img(suit, small = false) {
+    const img = document.createElement("img");
+    let src = '';
+    switch (suit) {
+        case 'D':
+            src = `img/diamond${small ? '_sm' : ''}.png`;
+            break;
+        case 'H':
+            src = `img/heart${small ? '_sm' : ''}.png`;
+            break;
+        case 'S':
+            src = `img/spade${small ? '_sm' : ''}.png`;
+            break;
+        case 'C':
+            src = `img/club${small ? '_sm' : ''}.png`;
+            break;
+    }
+    img.src = src;
+    img.classList.add('suit-img');
+    if (small) {
+        img.classList.add('suit-sm');
+    }
+    return img;
 }
 function start_round(cards) {
     const queens = cards.includes('QC') && cards.includes('QS');

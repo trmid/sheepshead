@@ -79,3 +79,62 @@ input, select, button{
 #send-btn{
     margin: 0;
 }
+
+/* Cards */
+
+#hand{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.card{
+    width: 5em;
+    height: 7em;
+    border-radius: 0.25em;
+    border: 1px solid black;
+    margin: 0.25em;
+    position: relative;
+    background-color: white;
+
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+}
+
+.card.playable:hover{
+    transform: translate(-2px, -2px);
+}
+
+.card.H, .card.D{
+    color: red;
+}
+
+.card.C, .card.S{
+    color: black;
+}
+
+.card-value{
+    position: absolute;
+    padding: 0.25em;
+    left: 0;
+    top: 0;
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.card .suit-img{
+    width: 60%;
+}
+
+.card .suit-img.suit-sm{
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    padding: 0.25em;
+    width: 1em;
+}

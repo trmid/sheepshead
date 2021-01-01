@@ -68,7 +68,7 @@ function valid_pass(pass, hashed) {
     return hash(pass) === hashed;
 }
 function handle_msg(socket, msg, player) {
-    var _a;
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         if (typeof msg !== 'string')
             return;
@@ -235,6 +235,17 @@ function handle_msg(socket, msg, player) {
                 }
                 break;
             }
+            case 'deal-again': {
+                try {
+                    if (player) {
+                        (_b = player.table.round) === null || _b === void 0 ? void 0 : _b.deal();
+                    }
+                }
+                catch (err) {
+                    console.error(err);
+                }
+                break;
+            }
         }
     });
 }
@@ -283,6 +294,7 @@ class Round {
         const active_player = this.active_player();
         this.turn++;
         this.trick.push({ player: active_player, card: card });
+        const trick = this.trick.map(play => { return { player: play.player.name, card: play.card }; });
         let winner;
         if (this.turn % 4 == 0) {
             const suit = Table.suit_to_num(this.trick[0].card.charAt(1));
@@ -336,6 +348,8 @@ class Round {
             this.trick.forEach(trick => {
                 winner.collected.set(trick.card, true);
             });
+            this.last_trick = trick.map(t => t.card);
+            this.trick = new Array();
             if (this.first_trick && suit != trump) {
                 if (winner == this.queens_player) {
                     this.team2 = this.table.players.filter(p => p != winner);
@@ -357,7 +371,7 @@ class Round {
                 player_name: active_player.name,
                 player_turn: next_player.name,
                 card: card,
-                trick: this.trick.map(play => { return { player: play.player.name, card: play.card }; }),
+                trick: trick,
                 my_hand: Array.from(player.hand.keys()),
                 winner: winner === null || winner === void 0 ? void 0 : winner.name,
             }));

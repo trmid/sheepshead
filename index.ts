@@ -2,7 +2,6 @@ import express from 'express';
 import ws from 'ws';
 import mongo, { MongoError } from 'mongodb';
 import crypto from 'crypto';
-import e from 'express';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -256,6 +255,16 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
             }
             break;
         }
+        case 'deal-again': {
+            try {
+                if (player) {
+                    player.table.start_round();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+            break;
+        }
     }
 }
 
@@ -328,6 +337,7 @@ class Round {
         this.turn++;
 
         this.trick.push({ player: active_player, card: card });
+        const trick = this.trick.map(play => { return { player: play.player.name, card: play.card }; }); // Map trick data
 
         let winner: Player
         if (this.turn % 4 == 0) {
@@ -380,6 +390,10 @@ class Round {
                 winner.collected.set(trick.card, true);
             });
 
+            // Reset Trick
+            this.last_trick = trick.map(t => t.card);
+            this.trick = new Array();
+
             // Check for first trick
             if (this.first_trick && suit != trump) {
                 if (winner == this.queens_player) {
@@ -397,6 +411,27 @@ class Round {
 
         if (this.turn == 32) {
             // Round over
+
+            let team1_points = 0;
+            this.team1.forEach(player => {
+                Array.from(player.collected.keys()).forEach(card => {
+                    team1_points += Table.card_val(card);
+                });
+            });
+
+            let team2_points = 0;
+            this.team2.forEach(player => {
+                Array.from(player.collected.keys()).forEach(card => {
+                    team2_points += Table.card_val(card);
+                });
+            });
+
+            let winning_team = team1_points > team2_points ? this.team1 : this.team2;
+            if (team1_points == team2_points) {
+                // tie
+
+            }
+
         }
 
         const next_player = this.active_player();
@@ -408,7 +443,7 @@ class Round {
                 player_name: active_player.name,
                 player_turn: next_player.name,
                 card: card,
-                trick: this.trick.map(play => { return { player: play.player.name, card: play.card }; }),
+                trick: trick,
                 my_hand: Array.from(player.hand.keys()),
                 winner: winner?.name,
             }));
@@ -661,6 +696,20 @@ class Table {
             case 'A': return 5;
             case 'J': return 6;
             case 'Q': return 7;
+        }
+        throw new Error("Unknown card value...");
+    }
+
+    static card_val(card: string) {
+        switch (card.charAt(0)) {
+            case '7': return 0;
+            case '8': return 0;
+            case '9': return 0;
+            case 'K': return 4;
+            case 'T': return 10;
+            case 'A': return 11;
+            case 'J': return 2;
+            case 'Q': return 3;
         }
         throw new Error("Unknown card value...");
     }
