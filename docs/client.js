@@ -145,9 +145,28 @@ function log(msg, className = "none") {
         log_elem.scrollTop = log_elem.scrollHeight;
 }
 function update_hand(cards) {
+    const sort_hand = document.getElementById("sort-hand");
+    sort_hand.onclick = () => {
+        update_hand(cards.sort((a, b) => {
+            const suits = { 'D': 0, 'H': 1, 'S': 2, 'C': 3 };
+            const vals = { '7': 0, '8': 1, '9': 2, 'K': 3, 'T': 4, 'A': 5, 'J': 6, 'Q': 7 };
+            const suit_a = suits[a.charAt(1)];
+            const suit_b = suits[b.charAt(1)];
+            const val_a = vals[a.charAt(0)];
+            const val_b = vals[b.charAt(0)];
+            let diff = suit_a - suit_b;
+            if (diff === 0) {
+                return val_a - val_b;
+            }
+            else {
+                return diff;
+            }
+        }));
+    };
     const hand = document.getElementById("hand");
     hand.innerHTML = "";
-    cards.forEach(card => {
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
         let val = card.charAt(0);
         const suit = card.charAt(1);
         if (val.toUpperCase() === 'T')
@@ -169,7 +188,7 @@ function update_hand(cards) {
             }));
         });
         hand.append(play_card);
-    });
+    }
 }
 function suit_img(suit, small = false) {
     const img = document.createElement("img");

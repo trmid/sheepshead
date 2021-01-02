@@ -612,6 +612,11 @@ class Round {
             }
         }
     }
+    is_trump(card) {
+        const card_val = Table.val_to_num(card.charAt(0));
+        const card_suit = card.charAt(1);
+        return card_suit == this.trump() || card_val > 5;
+    }
 }
 class Table {
     constructor(name, hash) {
@@ -813,11 +818,32 @@ class Player {
     }
     play(card) {
         return __awaiter(this, void 0, void 0, function* () {
+            let illegal_card = false;
+            if (this.table.round && this.table.round.trick.length > 0) {
+                const trick_card = this.table.round.trick[0].card;
+                const trick_suit = this.table.round.is_trump(trick_card) ? 'T' : trick_card.charAt(1);
+                const card_suit = this.table.round.is_trump(card) ? 'T' : card.charAt(1);
+                if (card_suit != trick_suit) {
+                    let has_suit = false;
+                    Array.from(this.hand.keys()).forEach(card => {
+                        var _a;
+                        const hand_suit = ((_a = this.table.round) === null || _a === void 0 ? void 0 : _a.is_trump(card)) ? 'T' : card.charAt(1);
+                        if (hand_suit == trick_suit)
+                            has_suit = true;
+                    });
+                    if (has_suit) {
+                        illegal_card = true;
+                    }
+                }
+            }
             if (!this.table.is_turn(this)) {
                 yield this.send({ event: "error", msg: "It is not your turn to play a card." });
             }
             else if (!this.hand.get(card)) {
                 yield this.send({ event: "error", msg: "You do not have that card in your hand." });
+            }
+            else if (illegal_card) {
+                yield this.send({ event: "error", msg: "You cannot play that card since you have a different card that matches the trick suit!" });
             }
             else {
                 this.hand.delete(card);

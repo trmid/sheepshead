@@ -161,9 +161,40 @@ function log(msg: string, className = "none") {
 
 // Update Hand
 function update_hand(cards: string[]) {
+
+    // Sorting
+    const sort_hand = document.getElementById("sort-hand");
+    sort_hand.onclick = () => {
+        update_hand(cards.sort((a, b) => {
+
+            // suits and vals
+            const suits: any = { 'D': 0, 'H': 1, 'S': 2, 'C': 3 };
+            const vals: any = { '7': 0, '8': 1, '9': 2, 'K': 3, 'T': 4, 'A': 5, 'J': 6, 'Q': 7 };
+
+            // check suit
+            const suit_a = suits[a.charAt(1)];
+            const suit_b = suits[b.charAt(1)];
+
+            // check val
+            const val_a = vals[a.charAt(0)];
+            const val_b = vals[b.charAt(0)];
+
+            let diff = suit_a - suit_b;
+
+            if (diff === 0) {
+                return val_a - val_b;
+            } else {
+                return diff;
+            }
+
+        }));
+    };
+
+    // Display cards
     const hand = document.getElementById("hand");
     hand.innerHTML = "";
-    cards.forEach(card => {
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
         let val = card.charAt(0);
         const suit = card.charAt(1);
         if (val.toUpperCase() === 'T') val = '10'; // convert T to 10
@@ -187,7 +218,7 @@ function update_hand(cards: string[]) {
             }));
         });
         hand.append(play_card);
-    });
+    }
 }
 
 // get suit image element
