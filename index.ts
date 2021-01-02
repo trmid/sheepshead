@@ -2,7 +2,6 @@ import express from 'express';
 import ws from 'ws';
 import mongo, { MongoError } from 'mongodb';
 import crypto from 'crypto';
-import e from 'express';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -900,7 +899,7 @@ class Player {
 
     deal(cards: string[], player_turn: string) {
         if (cards.length != 8) throw new Error("Incorrect card hand size...");
-        this.original_hand.clear;
+        this.original_hand.clear();
         this.hand.clear();
         this.collected.clear();
         cards.forEach(card => {

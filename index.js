@@ -803,7 +803,7 @@ class Player {
     deal(cards, player_turn) {
         if (cards.length != 8)
             throw new Error("Incorrect card hand size...");
-        this.original_hand.clear;
+        this.original_hand.clear();
         this.hand.clear();
         this.collected.clear();
         cards.forEach(card => {
