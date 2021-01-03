@@ -509,7 +509,7 @@ class Round {
                         player.balance -= payment;
                     });
                 } else {
-                    this.solo_player.balance -= losers.players.length * payment;
+                    this.solo_player.balance -= winners.players.length * payment;
                     winners.players.forEach((player: Player) => {
                         player.balance += payment;
                     });
@@ -551,6 +551,7 @@ class Round {
                 player_turn: next_player.name,
                 card: card,
                 trick: trick,
+                trump: this.trump(),
                 my_hand: Array.from(player.hand.keys()),
                 winner: winner?.name,
                 payment: payment,
@@ -570,7 +571,7 @@ class Round {
 
     }
 
-    call(
+    async call(
         player: Player,
         call: 'ready' | 'solo' | 'first-trick' | 'card',
         suit?: 'D' | 'H' | 'S' | 'C',
@@ -666,11 +667,21 @@ class Round {
                 }
 
                 // Start round
-                this.table.send({
-                    event: 'round-start',
-                    player_turn: this.active_player().name,
-                    strategy_call: this.strategy_call
+                const messages = new Array<Promise<boolean>>();
+                this.table.players.forEach(player => {
+                    messages.push(player.send({
+                        event: 'round-start',
+                        player_turn: this.active_player().name,
+                        strategy_call: this.strategy_call,
+                        trump: this.trump(),
+                        my_hand: Array.from(player.hand.keys()),
+                    }));
                 });
+
+                const res = await Promise.all(messages);
+
+                return res;
+
             }
         }
     }

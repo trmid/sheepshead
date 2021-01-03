@@ -34,7 +34,11 @@ window.addEventListener('load', () => {
     /**
      * Change on compile for production
      */
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
+
+    socket.onclose = () => {
+        log("You have been disconnected from the server...", "error");
+    };
 
     socket.onopen = () => {
         socket.send(JSON.stringify({
@@ -63,16 +67,16 @@ window.addEventListener('load', () => {
                 case 'card-played':
                     let trick_str = "";
                     data.trick.forEach((trick: any) => {
-                        trick_str += `[${trick.player}: ${trick.card}] `;
+                        trick_str += `[${trick.player}: ${text_card(trick.card)}] `;
                     });
-                    log(`${data.player_name} played ${data.card}. Current trick: ${trick_str}`, "game");
+                    log(`${data.player_name} played ${text_card(data.card)}. Current trick: ${trick_str}`, "game");
                     if (data.winner) {
                         log(`${data.winner} has taken the trick!`, 'strategy');
                     }
                     if (data.player_turn) {
                         log(`It is ${data.player_turn}'${data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's'} turn to play a card...`, 'game');
                     }
-                    update_hand(data.my_hand);
+                    update_hand(data.my_hand, data.trump);
 
                     // Check round over
                     if (data.winners) {
@@ -114,6 +118,7 @@ window.addEventListener('load', () => {
                         log(data.strategy_call, 'strategy');
                     }
                     log(`It is ${data.player_turn}'${data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's'} turn to play a card...`, 'game');
+                    update_hand(data.my_hand, data.trump);
                     break;
             }
         } catch (err) {
@@ -160,12 +165,20 @@ function log(msg: string, className = "none") {
 }
 
 // Update Hand
-function update_hand(cards: string[]) {
+function update_hand(cards: string[], trump = 'D') {
 
     // Sorting
-    const sort_hand = document.getElementById("sort-hand");
-    sort_hand.onclick = () => {
-        update_hand(cards.sort((a, b) => {
+    const unsorted = cards.filter(c => true);
+    const sort_hand = <HTMLInputElement>document.getElementById("sort-hand");
+    const sort = sort_hand.checked;
+    sort_hand.onclick = (e) => {
+        e.stopPropagation();
+        update_hand(unsorted, trump);
+    };
+
+    // Sort cards
+    if (sort) {
+        cards = cards.sort((a, b) => {
 
             // suits and vals
             const suits: any = { 'D': 0, 'H': 1, 'S': 2, 'C': 3 };
@@ -179,16 +192,30 @@ function update_hand(cards: string[]) {
             const val_a = vals[a.charAt(0)];
             const val_b = vals[b.charAt(0)];
 
-            let diff = suit_a - suit_b;
+            // check trump
+            const trump_a = (val_a > 5 || a.charAt(1) === trump);
+            const trump_b = (val_b > 5 || b.charAt(1) === trump);
 
-            if (diff === 0) {
-                return val_a - val_b;
+            if (!trump_a && !trump_b) {
+                let diff = suit_a - suit_b;
+                if (diff === 0) {
+                    return val_a - val_b;
+                } else {
+                    return diff;
+                }
+            } else if (trump_a && trump_b) {
+                let diff = val_a - val_b;
+                if (diff === 0) {
+                    return suit_a - suit_b;
+                } else {
+                    return diff;
+                }
             } else {
-                return diff;
+                return (trump_a ? 1 : -1) - (trump_b ? 1 : -1);
             }
 
-        }));
-    };
+        });
+    }
 
     // Display cards
     const hand = document.getElementById("hand");
@@ -219,6 +246,21 @@ function update_hand(cards: string[]) {
         });
         hand.append(play_card);
     }
+}
+
+// Format card for text
+function text_card(card: string) {
+    let str = '';
+
+    let val = card.charAt(0);
+    const suit = card.charAt(1);
+    if (val.toUpperCase() === 'T') val = '10'; // convert T to 10
+
+    str += val;
+
+    str += suit_img(suit, true).outerHTML;
+
+    return str;
 }
 
 // get suit image element

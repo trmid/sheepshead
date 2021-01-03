@@ -462,7 +462,7 @@ class Round {
                         });
                     }
                     else {
-                        this.solo_player.balance -= losers.players.length * payment;
+                        this.solo_player.balance -= winners.players.length * payment;
                         winners.players.forEach((player) => {
                             player.balance += payment;
                         });
@@ -499,6 +499,7 @@ class Round {
                     player_turn: next_player.name,
                     card: card,
                     trick: trick,
+                    trump: this.trump(),
                     my_hand: Array.from(player.hand.keys()),
                     winner: winner === null || winner === void 0 ? void 0 : winner.name,
                     payment: payment,
@@ -514,103 +515,112 @@ class Round {
         });
     }
     call(player, call, suit, val) {
-        if (this.player_ready.get(player)) {
-            player.send({
-                event: 'error',
-                msg: 'You have already readied up.'
-            });
-            return;
-        }
-        const queens = player.hand.get('QC') && player.hand.get('QS');
-        if (queens) {
-            this.queens_player = player;
-        }
-        let bad_call = false;
-        if (call === 'ready') {
-        }
-        else if (call === 'first-trick') {
-            if (queens && !this.solo) {
-                this.first_trick = true;
-                this.strategy_call = `${player.name} has called First Trick!`;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.player_ready.get(player)) {
+                player.send({
+                    event: 'error',
+                    msg: 'You have already readied up.'
+                });
+                return;
             }
-        }
-        else if (!suit) {
-            bad_call = true;
-        }
-        else if (call === 'solo') {
-            if (!this.solo || this.solo !== 'D' && suit === 'D') {
-                this.solo = suit;
-                this.solo_player = player;
-                this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo!`;
+            const queens = player.hand.get('QC') && player.hand.get('QS');
+            if (queens) {
+                this.queens_player = player;
             }
-        }
-        else if (!val) {
-            bad_call = true;
-        }
-        else if (call === 'card') {
-            if (queens && !this.solo) {
-                this.chosen_card = val + suit;
-                this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
+            let bad_call = false;
+            if (call === 'ready') {
             }
-        }
-        else {
-            bad_call = true;
-        }
-        if (bad_call) {
-            player.send({
-                event: 'error',
-                msg: 'Incorrect ready call...'
-            });
-        }
-        else {
-            this.player_ready.set(player, true);
-            this.table.send({
-                event: 'ready',
-                player_name: player.name
-            });
-            if (this.player_ready.size == 4) {
-                if (this.solo && this.solo_player) {
-                    this.team1.push(this.solo_player);
-                    this.team2 = this.table.players.filter(p => p != this.solo_player);
+            else if (call === 'first-trick') {
+                if (queens && !this.solo) {
+                    this.first_trick = true;
+                    this.strategy_call = `${player.name} has called First Trick!`;
                 }
-                else if (this.chosen_card && this.queens_player) {
-                    const card = this.chosen_card;
-                    this.team1.push(this.queens_player);
-                    this.table.players.forEach(player => {
-                        if (player.hand.get(card)) {
-                            this.team1.push(player);
-                        }
-                        else {
-                            this.team2.push(player);
-                        }
-                    });
+            }
+            else if (!suit) {
+                bad_call = true;
+            }
+            else if (call === 'solo') {
+                if (!this.solo || this.solo !== 'D' && suit === 'D') {
+                    this.solo = suit;
+                    this.solo_player = player;
+                    this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo!`;
                 }
-                else if (this.first_trick && this.queens_player) {
-                    this.team1.push(this.queens_player);
+            }
+            else if (!val) {
+                bad_call = true;
+            }
+            else if (call === 'card') {
+                if (queens && !this.solo) {
+                    this.chosen_card = val + suit;
+                    this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
                 }
-                else if (this.queens_player) {
-                    this.solo = 'D';
-                    this.solo_player = this.queens_player;
-                    this.team1.push(this.queens_player);
-                    this.team2 = this.table.players.filter(p => p != this.queens_player);
-                }
-                else {
-                    this.table.players.forEach(player => {
-                        if (player.original_hand.get('QS') || player.original_hand.get('QC')) {
-                            this.team1.push(player);
-                        }
-                        else {
-                            this.team2.push(player);
-                        }
-                    });
-                }
-                this.table.send({
-                    event: 'round-start',
-                    player_turn: this.active_player().name,
-                    strategy_call: this.strategy_call
+            }
+            else {
+                bad_call = true;
+            }
+            if (bad_call) {
+                player.send({
+                    event: 'error',
+                    msg: 'Incorrect ready call...'
                 });
             }
-        }
+            else {
+                this.player_ready.set(player, true);
+                this.table.send({
+                    event: 'ready',
+                    player_name: player.name
+                });
+                if (this.player_ready.size == 4) {
+                    if (this.solo && this.solo_player) {
+                        this.team1.push(this.solo_player);
+                        this.team2 = this.table.players.filter(p => p != this.solo_player);
+                    }
+                    else if (this.chosen_card && this.queens_player) {
+                        const card = this.chosen_card;
+                        this.team1.push(this.queens_player);
+                        this.table.players.forEach(player => {
+                            if (player.hand.get(card)) {
+                                this.team1.push(player);
+                            }
+                            else {
+                                this.team2.push(player);
+                            }
+                        });
+                    }
+                    else if (this.first_trick && this.queens_player) {
+                        this.team1.push(this.queens_player);
+                    }
+                    else if (this.queens_player) {
+                        this.solo = 'D';
+                        this.solo_player = this.queens_player;
+                        this.team1.push(this.queens_player);
+                        this.team2 = this.table.players.filter(p => p != this.queens_player);
+                    }
+                    else {
+                        this.table.players.forEach(player => {
+                            if (player.original_hand.get('QS') || player.original_hand.get('QC')) {
+                                this.team1.push(player);
+                            }
+                            else {
+                                this.team2.push(player);
+                            }
+                        });
+                    }
+                    const messages = new Array();
+                    this.table.players.forEach(player => {
+                        messages.push(player.send({
+                            event: 'round-start',
+                            player_turn: this.active_player().name,
+                            strategy_call: this.strategy_call,
+                            trump: this.trump(),
+                            my_hand: Array.from(player.hand.keys()),
+                        }));
+                    });
+                    const res = yield Promise.all(messages);
+                    return res;
+                }
+            }
+        });
     }
     is_trump(card) {
         const card_val = Table.val_to_num(card.charAt(0));

@@ -1,5 +1,5 @@
 #log{
-    max-height: 600px;
+    max-height: 40vh;
     width: 100%;
     overflow-y: auto;
     border: 1px solid black;
@@ -54,9 +54,13 @@ footer{
     margin-top: 1em;
 }
 
-input, select, button{
+input[type=text], input[type=password], input[type=submit], select, button{
     padding: 0.4em;
     margin: 0.5em;
+}
+
+input[type=checkbox]{
+    margin: 0;
 }
 
 #text-row{
@@ -78,6 +82,25 @@ input, select, button{
 
 #send-btn{
     margin: 0;
+}
+
+/* Game Container */
+
+#game-container{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+#log-container{
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+#game-options-container{
+    flex-grow: 2;
 }
 
 /* Cards */
@@ -137,4 +160,8 @@ input, select, button{
     bottom: 0;
     padding: 0.25em;
     width: 1em;
+}
+
+#log .suit-img.suit-sm {
+    height: 1em;
 }

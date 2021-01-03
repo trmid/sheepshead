@@ -48,37 +48,45 @@
             </fieldset>
         </form>
 
-        <fieldset>
-            <legend>Log</legend>
-            <div id="log">
-                <table id="log-messages">
-                    <tr>
-                        <th>Begin Log...</th>
-                        <td></td>
-                    </tr>
-                </table>
-            </div>
-            <div id="text-row">
-                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..."></textarea>
-                <button id="send-btn">Send</button>
-            </div>
-        </fieldset>
+        <div id="game-container">
 
-        <fieldset>
-            <legend>Round Options</legend>
-            <div id="round-options">
+            <fieldset id="log-container">
+                <legend>Log</legend>
+                <div id="log">
+                    <table id="log-messages">
+                        <tr>
+                            <th>Begin Log...</th>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="text-row">
+                    <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..."></textarea>
+                    <button id="send-btn">Send</button>
+                </div>
+            </fieldset>
+
+            <div id="game-options-container">
+
+                <fieldset id="round-options-container">
+                    <legend>Round Options</legend>
+                    <div id="round-options">
+
+                    </div>
+                </fieldset>
+
+                <fieldset id="hand-container">
+                    <button id="toggle-sort-hand" onclick="this.children[0].click();"><input type="checkbox" id="sort-hand" /> Sort Hand</button>
+                    <button onclick="if(window.confirm('This is a development feature and will deal a new hand. Are you sure you want to do this?')) socket.send(JSON.stringify({event: 'deal-again'}));">Deal Again</button>
+                    <legend>My Hand</legend>
+                    <div id="hand">
+
+                    </div>
+                </fieldset>
 
             </div>
-        </fieldset>
 
-        <fieldset>
-            <button id="sort-hand">Sort Hand</button>
-            <button onclick="socket.send(JSON.stringify({event: 'deal-again'}));">Deal Again</button>
-            <legend>My Hand</legend>
-            <div id="hand">
-
-            </div>
-        </fieldset>
+        </div>
 
     </main>
     <footer>
