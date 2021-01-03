@@ -16,6 +16,7 @@ const express_1 = __importDefault(require("express"));
 const ws_1 = __importDefault(require("ws"));
 const mongodb_1 = __importDefault(require("mongodb"));
 const crypto_1 = __importDefault(require("crypto"));
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const app = express_1.default();
 const port = process.env.PORT || 3000;
 const mongo_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@sheepshead.oa0bn.mongodb.net/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`;
@@ -37,6 +38,17 @@ mongodb_1.default.MongoClient.connect(mongo_url, (err, client) => __awaiter(void
         console.error(err);
     }
 }));
+let players_active = false;
+setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+    if (players_active && !process.env.DEBUG) {
+        players_active = false;
+        const res = yield node_fetch_1.default('https://sheeps-head.herokuapp.com');
+        console.log('Sending wake up: ', res.status);
+    }
+    else {
+        console.log("No active players... Not sending wake up...");
+    }
+}), 5 * 60 * 1000);
 const player_map = new Map();
 const wss = new ws_1.default.Server({ noServer: true });
 wss.on('connection', socket => {
@@ -427,7 +439,7 @@ class Round {
                 if (this.solo) {
                     payment = 4 * multiplier;
                     if (!losers.trick && winners.players[0] == this.solo_player) {
-                        payment = 26 * multiplier;
+                        payment = 24 * multiplier;
                     }
                     else if (winners.black_queens) {
                         if (winners.dealt.get('QH')) {
@@ -446,9 +458,10 @@ class Round {
                         payment += multiplier * 2;
                     if (!losers.trick)
                         payment += multiplier * 2;
-                    if (winners.black_queens) {
-                        if (winners.dealt.get('QH')) {
-                            if (winners.dealt.get('QD')) {
+                    const team = winners.black_queens ? winners : (losers.black_queens ? losers : undefined);
+                    if (team) {
+                        if (team.dealt.get('QH')) {
+                            if (team.dealt.get('QD')) {
                                 payment += multiplier * 4;
                             }
                             else {
@@ -542,7 +555,7 @@ class Round {
                     this.strategy_call = `${player.name} has called First Trick!`;
                 }
             }
-            else if (!suit) {
+            else if (suit === undefined) {
                 bad_call = true;
             }
             else if (call === 'solo') {
@@ -552,12 +565,12 @@ class Round {
                     this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo!`;
                 }
             }
-            else if (!val) {
+            else if (val === undefined) {
                 bad_call = true;
             }
             else if (call === 'card') {
                 if (queens && !this.solo) {
-                    this.chosen_card = val + suit;
+                    this.chosen_card = `${val}${suit}`;
                     this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
                 }
             }
@@ -849,6 +862,10 @@ class Player {
                     });
                     if (has_suit) {
                         illegal_card = true;
+                    }
+                    else if (card === this.table.round.chosen_card && this.hand.size > 1) {
+                        yield this.send({ event: 'error', msg: "You cannot play that card unless it matches suit since it was chosen to get along with the queens." });
+                        return;
                     }
                 }
             }

@@ -25,7 +25,7 @@
 }
 
 #log td.server{
-    color: dodgerblue;
+    color: orange;
 }
 
 #log td.game{
@@ -33,7 +33,7 @@
 }
 
 #log td.strategy{
-    color: orange;
+    color: dodgerblue;
 }
 
 #log tr:nth-child(odd){
@@ -89,7 +89,7 @@ input[type=checkbox]{
 #game-container{
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-start;
     align-items: stretch;
 }

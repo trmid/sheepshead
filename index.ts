@@ -2,6 +2,7 @@ import express from 'express';
 import ws from 'ws';
 import mongo, { MongoError } from 'mongodb';
 import crypto from 'crypto';
+import fetch from 'node-fetch';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,6 +30,19 @@ mongo.MongoClient.connect(mongo_url, async (err, client) => {
     }
 
 });
+
+// keep track of active players to keep heroku server alive
+let players_active = false;
+setInterval(async () => {
+    if (players_active && !process.env.DEBUG) {
+        players_active = false;
+        // Send web request to keep server alive
+        const res = await fetch('https://sheeps-head.herokuapp.com');
+        console.log('Sending wake up: ', res.status);
+    } else {
+        console.log("No active players... Not sending wake up...");
+    }
+}, 5 * 60 * 1000); // 5 min
 
 
 // Setup Web Sockets
@@ -478,7 +492,7 @@ class Round {
             if (this.solo) {
                 payment = 4 * multiplier;
                 if (!losers.trick && winners.players[0] == this.solo_player) {
-                    payment = 26 * multiplier; // solo do
+                    payment = 24 * multiplier; // solo do
                 } else if (winners.black_queens) {
                     if (winners.dealt.get('QH')) {
                         if (winners.dealt.get('QD')) {
@@ -492,9 +506,10 @@ class Round {
                 payment = 2 * multiplier;
                 if (losers.points < 31) payment += multiplier * 2 // no schneider
                 if (!losers.trick) payment += multiplier * 2; // no trick
-                if (winners.black_queens) {
-                    if (winners.dealt.get('QH')) {
-                        if (winners.dealt.get('QD')) {
+                const team = winners.black_queens ? winners : (losers.black_queens ? losers : undefined);
+                if (team) {
+                    if (team.dealt.get('QH')) {
+                        if (team.dealt.get('QD')) {
                             payment += multiplier * 4;
                         } else {
                             payment += multiplier * 3;
@@ -608,7 +623,7 @@ class Round {
                 this.first_trick = true;
                 this.strategy_call = `${player.name} has called First Trick!`;
             }
-        } else if (!suit) {
+        } else if (suit === undefined) {
             bad_call = true;
         } else if (call === 'solo') {
             if (!this.solo || this.solo !== 'D' && suit === 'D') {
@@ -616,16 +631,19 @@ class Round {
                 this.solo_player = player;
                 this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo!`;
             }
-        } else if (!val) {
+        } else if (val === undefined) {
             bad_call = true;
         } else if (call === 'card') {
             if (queens && !this.solo) {
-                this.chosen_card = val + suit;
+                this.chosen_card = `${val}${suit}`;
                 this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
             }
         } else {
             bad_call = true;
         }
+
+        // TODO:
+        // Add solo do
 
         if (bad_call) {
             player.send({
@@ -946,6 +964,10 @@ class Player {
                 });
                 if (has_suit) {
                     illegal_card = true;
+                } else if (card === this.table.round.chosen_card && this.hand.size > 1) {
+                    // Cannot play chosen card
+                    await this.send({ event: 'error', msg: "You cannot play that card unless it matches suit since it was chosen to get along with the queens." });
+                    return;
                 }
             }
         }
