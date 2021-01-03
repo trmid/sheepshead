@@ -26,7 +26,7 @@ window.addEventListener('load', () => {
             send_msg();
         }
     });
-    socket = new WebSocket("ws://localhost:3000");
+    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
     socket.onclose = () => {
         log("You have been disconnected from the server...", "error");
     };
