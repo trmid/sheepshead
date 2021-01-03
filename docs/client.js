@@ -46,6 +46,7 @@ window.addEventListener('load', () => {
                     break;
                 case 'player-connected':
                     log(`${data.player_name} has connected to the table!`, 'server');
+                    (document.getElementById('table-form')).setAttribute('style', "display: none;");
                     break;
                 case 'player-joined':
                     log(`${data.player_name} has joined the table!`, 'server');

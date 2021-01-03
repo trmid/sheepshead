@@ -12,9 +12,12 @@ let db: mongo.Db;
 mongo.MongoClient.connect(mongo_url, async (err, client) => {
     if (err) throw err;
     console.log("Connected to mongodb server...");
-    db = client.db("sheepshead");
+    db = client.db(process.env.MONGO_DBNAME);
 
-    await db.dropCollection("tables");
+    // Drop for testing
+    if (process.env.DEBUG) {
+        await db.dropCollection("tables");
+    }
 
     // Create indexes
     try {

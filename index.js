@@ -24,8 +24,10 @@ mongodb_1.default.MongoClient.connect(mongo_url, (err, client) => __awaiter(void
     if (err)
         throw err;
     console.log("Connected to mongodb server...");
-    db = client.db("sheepshead");
-    yield db.dropCollection("tables");
+    db = client.db(process.env.MONGO_DBNAME);
+    if (process.env.DEBUG) {
+        yield db.dropCollection("tables");
+    }
     try {
         const tables = db.collection("tables");
         yield tables.createIndex({ name: 1 }, { unique: true });
