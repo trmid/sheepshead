@@ -49,6 +49,9 @@ window.addEventListener('load', () => {
             event: "connected"
         }));
         log("Connected to server...");
+        setInterval(() => {
+            socket.send(JSON.stringify({ 'event': 'ping' }));
+        }, 5000);
     };
 
     socket.onmessage = (me) => {
@@ -56,6 +59,9 @@ window.addEventListener('load', () => {
             const data = JSON.parse(me.data);
             console.log(data);
             switch (data.event) {
+                case 'ping':
+                    console.log("ping");
+                    break;
                 case 'table-created':
                     log("Table Created!", 'server');
                     break;

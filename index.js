@@ -77,6 +77,10 @@ function handle_msg(socket, msg, player) {
         const data = JSON.parse(msg);
         console.log(data);
         switch (data.event) {
+            case 'ping': {
+                socket.send(JSON.stringify({ 'event': 'ping' }));
+                break;
+            }
             case 'create-table': {
                 try {
                     const hashed = hash(data.table_password);
