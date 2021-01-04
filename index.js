@@ -528,7 +528,13 @@ class Round {
             });
             const res = yield Promise.all(messages);
             if (winners) {
-                this.table.start_round();
+                const self = this;
+                setTimeout(() => {
+                    self.table.send_table_data();
+                }, 2000);
+                setTimeout(() => {
+                    self.table.start_round();
+                }, 5000);
             }
             return res;
         });
@@ -695,13 +701,23 @@ class Table {
     }
     send_table_data() {
         const messages = new Array();
+        const dealer_name = this.players[this.dealer % 4].name;
         this.players.forEach(player => {
             const msg = {
-                event: 'table_update',
-                other_players: this.players.map(p => { return { name: p.name, balance: p.balance }; }).filter(p => { return p.name != player.name; }),
-                my_hand: Array.from(player.hand.keys()),
-                my_name: player.name,
-                my_balance: player.balance
+                event: 'table-update',
+                other_players: this.players.map(p => {
+                    return {
+                        name: p.name,
+                        balance: p.balance,
+                        dealer: p.name === dealer_name
+                    };
+                }).filter(p => { return p.name != player.name; }),
+                me: {
+                    name: player.name,
+                    balance: player.balance,
+                    dealer: player.name === dealer_name
+                },
+                my_hand: Array.from(player.hand.keys())
             };
             messages.push(player.send(msg));
         });

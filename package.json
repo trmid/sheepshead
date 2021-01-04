@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node ./",
-    "test": "tsc && tsc -p ./docs/ && node ./"
+    "test": "tsc && tsc --removeComments docs/client.ts && node ./"
   },
   "repository": {
     "type": "git",

@@ -1,5 +1,7 @@
 
 let socket: WebSocket;
+let my_name: string;
+let clear_table = false;
 
 // Log Scroll check
 let scrolled = false;
@@ -38,7 +40,7 @@ window.addEventListener('load', () => {
      * 
      * ws://localhost:3000
      */
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
 
     socket.onclose = () => {
         log("You have been disconnected from the server...", "error");
@@ -65,25 +67,40 @@ window.addEventListener('load', () => {
                 case 'table-created':
                     log("Table Created!", 'server');
                     break;
-                case 'player-connected':
+                case 'player-connected': {
                     log(`${data.player_name} has connected to the table!`, 'server');
                     // hide the table form
-                    (document.getElementById('table-form')).setAttribute('style', "display: none;");
+                    const table_form = document.getElementById('table-form')
+                    if (table_form) table_form.remove();
+                    // show the player shelf
+                    (document.getElementById('my-shelf')).removeAttribute('style');
                     break;
+                }
                 case 'player-joined':
                     log(`${data.player_name} has joined the table!`, 'server');
                     break;
                 case 'player-dc':
                     log(`${data.player_name} has disconnected from the table...`, 'server');
                     break;
-                case 'card-played':
-                    let trick_str = "";
-                    data.trick.forEach((trick: any) => {
-                        trick_str += `[${trick.player}: ${text_card(trick.card)}] `;
-                    });
-                    log(`${data.player_name} played ${text_card(data.card)}. Current trick: ${trick_str}`, "game");
+                case 'card-played': {
+
+                    // Append to table
+                    if (clear_table) {
+                        clear_table_cards();
+                    }
+                    if (data.player_name === my_name) {
+                        document.getElementById("my-card-shelf").append(card_elem(data.card, false, 'animate-transform-up'));
+                    } else {
+                        document.getElementById(`card-holder-${data.player_name}`).append(card_elem(data.card, false, 'animate-transform-down'));
+                    }
+
+                    // log
+                    log(`${data.player_name} played ${text_card(data.card)}.`, "game");
                     if (data.winner) {
                         log(`${data.winner} has taken the trick!`, 'strategy');
+                        clear_table = true;
+                        const card_holder = data.winner === my_name ? document.getElementById("my-card-shelf") : document.getElementById(`card-holder-${data.winner}`);
+                        card_holder.getElementsByClassName('card')[0].classList.add('winner');
                     }
                     if (data.player_turn) {
                         log(`It is ${data.player_turn}'${data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's'} turn to play a card...`, 'game');
@@ -92,6 +109,7 @@ window.addEventListener('load', () => {
 
                     // Check round over
                     if (data.winners) {
+
                         let winners = '';
                         for (let i = 0; i < data.winners.players.length; i++) {
                             winners += data.winners.players[i].name + (i < data.winners.players.length - 1 ? ', ' : '');
@@ -107,23 +125,57 @@ window.addEventListener('load', () => {
                     }
 
                     break;
+                }
                 case 'deal':
+
+                    // Remove last trick
+                    clear_table_cards();
+
                     log(`Cards have been dealt!`, 'game');
-                    update_hand(data.cards);
+                    update_hand(data.cards, 'D', true);
                     start_round(data.cards);
                     break;
-                case 'table-update':
+                case 'table-update': {
                     update_hand(data.my_hand);
+                    my_name = data.me.name; // update player name
+
+                    const me = document.getElementById("me");
+                    me.innerHTML = "";
+                    me.append(player_elem(data.me));
+
+                    const card_shelf = document.getElementById("card-shelf");
+                    card_shelf.innerHTML = "";
+
+                    const player_shelf = document.getElementById("player-shelf");
+                    player_shelf.innerHTML = "";
+                    for (let i = 0; i < data.other_players.length; i++) {
+                        const player = data.other_players[i];
+                        player_shelf.append(player_elem(player));
+
+                        const card_holder = document.createElement("div");
+                        card_holder.id = `card-holder-${player.name}`;
+                        card_shelf.append(card_holder);
+                    }
+
                     break;
+                }
                 case 'error':
                     log(data.msg, 'error');
                     break;
                 case 'msg':
                     log(`${data.player_name}: ${data.msg}`);
                     break;
-                case 'ready':
+                case 'ready': {
                     log(`${data.player_name} is ready!`, 'game');
+
+                    const ready = document.createElement("div");
+                    ready.innerHTML = "Ready";
+                    ready.classList.add("player-ready");
+                    const player_elem = document.getElementById(`player-${data.player_name}`)
+                    player_elem.append(ready);
+                    player_elem.classList.add("ready");
                     break;
+                }
                 case 'round-start':
                     document.getElementById('round-options').innerHTML = "";
                     if (data.strategy_call) {
@@ -176,8 +228,48 @@ function log(msg: string, className = "none") {
     if (!scrolled) log_elem.scrollTop = log_elem.scrollHeight;
 }
 
+// Create Player Element
+function player_elem(player: any) {
+    const elem = document.createElement("div");
+    const name = document.createElement("div");
+    const balance = document.createElement("div");
+
+    elem.id = `player-${player.name}`;
+    elem.classList.add("player");
+
+    name.classList.add("player-name");
+    name.innerHTML = player.name;
+
+    balance.classList.add("player-balance");
+    balance.innerHTML = `$${player.balance.toFixed(2)}`;
+
+    elem.append(name);
+    elem.append(document.createElement("hr"));
+    elem.append(balance);
+
+    if (player.dealer) {
+        const dealer = document.createElement("div");
+        dealer.innerHTML = "Dealer";
+        dealer.classList.add("dealer");
+        elem.append(dealer);
+    }
+
+    return elem;
+}
+
+// Clear table cards
+function clear_table_cards() {
+    const play_area = document.getElementById('play-area');
+    const cards = Array.from(play_area.getElementsByClassName("card"));
+    for (let i = 0; i < cards.length; i++) {
+        console.log(cards[i]);
+        cards[i].remove();
+    }
+    clear_table = false;
+}
+
 // Update Hand
-function update_hand(cards: string[], trump = 'D') {
+function update_hand(cards: string[], trump = 'D', animate = false) {
 
     // Sorting
     const unsorted = cards.filter(c => true);
@@ -230,34 +322,58 @@ function update_hand(cards: string[], trump = 'D') {
     }
 
     // Display cards
-    const hand = document.getElementById("hand");
+    const hand = document.getElementById("my-hand");
     hand.innerHTML = "";
     for (let i = 0; i < cards.length; i++) {
         const card = cards[i];
-        let val = card.charAt(0);
-        const suit = card.charAt(1);
-        if (val.toUpperCase() === 'T') val = '10'; // convert T to 10
+        if (animate) {
+            setTimeout(() => {
+                hand.innerHTML = "";
+                for (let j = 0; j <= i; j++) {
+                    hand.append(card_elem(cards[j], true));
+                }
+            }, i * 100);
+        } else {
+            hand.append(card_elem(card, true));
+        }
+    }
+}
 
-        const play_card = document.createElement("div");
-        play_card.classList.add("card");
+// Card Element
+function card_elem(card: string, playable = false, animation?: string) {
+    let val = card.charAt(0);
+    const suit = card.charAt(1);
+    if (val.toUpperCase() === 'T') val = '10'; // convert T to 10
+
+    const play_card = document.createElement("div");
+    play_card.classList.add("card");
+    play_card.classList.add(suit);
+
+    const value = document.createElement("div");
+    value.classList.add("card-value");
+    value.innerHTML = val;
+    play_card.append(value);
+    play_card.append(suit_img(suit));
+    play_card.append(suit_img(suit, true));
+
+    if (playable) {
         play_card.classList.add("playable");
-        play_card.classList.add(suit);
-
-        const value = document.createElement("div");
-        value.classList.add("card-value");
-        value.innerHTML = val;
-        play_card.append(value);
-        play_card.append(suit_img(suit));
-        play_card.append(suit_img(suit, true));
-
         play_card.addEventListener("click", () => {
             socket.send(JSON.stringify({
                 event: 'play-card',
                 card: card
             }));
         });
-        hand.append(play_card);
     }
+
+    if (animation) {
+        play_card.classList.add(animation);
+        setTimeout(() => {
+            play_card.classList.add('animate-transform');
+        }, 0);
+    }
+
+    return play_card;
 }
 
 // Format card for text

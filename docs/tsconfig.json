@@ -1,12 +1,13 @@
 {
     "compilerOptions": {
-        "module": "None",
+        "module": "System",
         "target": "ES6",
         "noImplicitAny": true,
         "removeComments": true,
         "sourceMap": false,
+        "outFile": "client.js"
     },
-    "include": [
+    "files": [
         "client.ts"
     ]
 }

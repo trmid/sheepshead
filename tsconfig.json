@@ -3,6 +3,7 @@
         "module": "CommonJS",
         "target": "ES6",
         "strict": true,
+        "moduleResolution": "node",
         "esModuleInterop": true,
         "noImplicitAny": true,
         "removeComments": true,
