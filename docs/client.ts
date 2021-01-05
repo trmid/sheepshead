@@ -609,12 +609,16 @@ function start_round(cards: string[]) {
         const val_keys = Object.keys(vals);
         const suit_keys = Object.keys(suits);
         for (let s = 0; s < suit_keys.length; s++) {
-            for (let v = 0; v < val_keys.length; v++) {
-                const card = val_keys[v] + suit_keys[s];
-                const option = document.createElement("option");
-                option.innerHTML = vals[val_keys[v]] + " of " + suits[suit_keys[s]];
-                option.value = card;
-                get_along_card.append(option);
+            if (suit_keys[s] !== 'D') {
+                for (let v = 0; v < val_keys.length; v++) {
+                    if (!(['J', 'Q']).includes(val_keys[v])) {
+                        const card = val_keys[v] + suit_keys[s];
+                        const option = document.createElement("option");
+                        option.innerHTML = vals[val_keys[v]] + " of " + suits[suit_keys[s]];
+                        option.value = card;
+                        get_along_card.append(option);
+                    }
+                }
             }
         }
 

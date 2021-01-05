@@ -568,10 +568,12 @@ class Round {
             }
             else if (call === 'solo') {
                 if (!this.solo || this.solo !== 'D' && suit === 'D') {
+                    this.first_trick = false;
+                    this.chosen_card = undefined;
                     this.solo = suit;
                     this.solo_player = player;
                     if (queens) {
-                        this.solo_deux = solo_deux;
+                        this.solo_deux = !!solo_deux;
                     }
                     this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_deux ? ' Deux' : ''}!`;
                 }
@@ -581,6 +583,7 @@ class Round {
             }
             else if (call === 'card') {
                 if (queens && !this.solo) {
+                    this.first_trick = false;
                     this.chosen_card = `${val}${suit}`;
                     this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
                 }

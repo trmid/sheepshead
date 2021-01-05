@@ -532,12 +532,16 @@ function start_round(cards) {
         var val_keys = Object.keys(vals);
         var suit_keys = Object.keys(suits);
         for (var s = 0; s < suit_keys.length; s++) {
-            for (var v = 0; v < val_keys.length; v++) {
-                var card = val_keys[v] + suit_keys[s];
-                var option = document.createElement("option");
-                option.innerHTML = vals[val_keys[v]] + " of " + suits[suit_keys[s]];
-                option.value = card;
-                get_along_card.append(option);
+            if (suit_keys[s] !== 'D') {
+                for (var v = 0; v < val_keys.length; v++) {
+                    if (!(['J', 'Q']).includes(val_keys[v])) {
+                        var card = val_keys[v] + suit_keys[s];
+                        var option = document.createElement("option");
+                        option.innerHTML = vals[val_keys[v]] + " of " + suits[suit_keys[s]];
+                        option.value = card;
+                        get_along_card.append(option);
+                    }
+                }
             }
         }
         round_options.append(get_along_card);
