@@ -190,6 +190,12 @@ main{
 
 .player.player-turn{
     box-shadow: 0 0 7px 3px dodgerblue !important;
+    background-color: dodgerblue;
+    color: white;
+}
+
+.player.player.player-turn * {
+    color: white !important;
 }
 
 .player.ready{
@@ -429,15 +435,15 @@ input[type=checkbox]{
     opacity: 1.0;
 }
 
-/* ERROR LOG */
+/* TEMP LOG */
 
 #temp-log{
-    position: fixed;
+    position: absolute;
     right: 0.5em;
-    bottom: 0.5em;
-    max-width: 90vw;
-    max-height: 90vh;
-    overflow-y: auto;
+    top: 0.5em;
+    max-width: 50vw;
+    max-height: 30vh;
+    overflow: hidden;
 }
 
 .temp-msg{

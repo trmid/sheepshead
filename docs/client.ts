@@ -10,7 +10,17 @@ const vals: any = { '7': 'Seven', '8': 'Eight', '9': 'Nine', 'K': 'King', 'T': '
 let scrolled = false;
 let log_elem: HTMLElement;
 
+// Audio files
+const place_card_audio = new Array<HTMLAudioElement>();
+const play_card_audio = new Array<HTMLAudioElement>();
+
 window.addEventListener('load', () => {
+
+    // Load audio files
+    for (let i = 0; i < 8; i++) {
+        place_card_audio.push(<HTMLAudioElement>document.getElementById(`place_card_${i}`));
+    }
+    play_card_audio.push(<HTMLAudioElement>document.getElementById("play_card_0"));
 
     log_elem = document.getElementById("log");
     log_elem.addEventListener("scroll", (e) => {
@@ -75,7 +85,7 @@ window.addEventListener('load', () => {
 
         setInterval(() => {
             socket.send(JSON.stringify({ 'event': 'ping' }));
-        }, 5000);
+        }, 1000 * 30); // Every 30 sec
     };
 
     socket.onmessage = (me) => {
@@ -120,6 +130,9 @@ window.addEventListener('load', () => {
                     } else {
                         document.getElementById(`card-holder-${data.player_name}`).append(card_elem(data.card, false, 'animate-transform-down'));
                     }
+
+                    // Play audio
+                    play_card_audio[Math.floor(Math.random() * play_card_audio.length)].play();
 
                     // Log last trick
                     if (data.last_trick) {
@@ -171,6 +184,7 @@ window.addEventListener('load', () => {
                     log(`Cards have been dealt! Waiting for players to ready up...`, 'game');
                     update_hand(data.cards, 'D', true);
                     start_round(data.cards);
+
                     break;
                 case 'table-update': {
                     update_hand(data.my_hand);
@@ -285,18 +299,20 @@ function log(msg: string, className = "none") {
 
     // temp log if chat not visible
     if (document.getElementById('log-area').classList.contains('hide-log')) {
-        const log = document.getElementById("temp-log");
+        const temp_log = document.getElementById("temp-log");
         const temp = document.createElement("div");
+        const temp_text = document.createElement("span"); // put text in wrapper so that the parent is removed when the .game divs are removed to prevent cheating... I know, its a little wonk.
+        temp_text.innerHTML = msg;
         temp.classList.add("temp-msg");
-        if (className) temp.classList.add(className);
-        temp.innerHTML = msg;
-        log.append(temp);
+        if (className) temp_text.classList.add(className);
+        temp.append(temp_text);
+        temp_log.prepend(temp);
         setTimeout(() => {
             temp.setAttribute('style', 'opacity: 0.0');
-        }, 200);
+        }, 1000);
         setTimeout(() => {
             temp.remove();
-        }, 1200);
+        }, 2000);
     }
 }
 
@@ -304,9 +320,14 @@ function log(msg: string, className = "none") {
 function toggle_chat() {
     const toggle_chat = document.getElementById('toggle-chat');
     const log = document.getElementById('log-area');
-    const visible = !log.classList.contains("hide-log");
     log.classList.toggle("hide-log");
-    toggle_chat.innerHTML = visible ? "Show Chat" : "Hide Chat";
+    const visible = !log.classList.contains("hide-log");
+    toggle_chat.innerHTML = visible ? "Hide Chat" : "Show Chat";
+    if (visible) {
+        // Scroll to bottom if un-hidden
+        log_elem.scrollTop = log_elem.scrollHeight;
+        scrolled = false;
+    }
 }
 
 // Set player turn
@@ -423,6 +444,7 @@ function update_hand(cards: string[], trump = 'D', animate = false) {
                 for (let j = 0; j <= i; j++) {
                     hand.append(card_elem(cards[j], true));
                 }
+                place_card_audio[i % 8].play();
             }, i * 100);
         } else {
             hand.append(card_elem(card, true));

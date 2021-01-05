@@ -5,7 +5,13 @@ var suits = { 'D': 'Diamonds', 'H': 'Hearts', 'S': 'Spades', 'C': 'Clubs' };
 var vals = { '7': 'Seven', '8': 'Eight', '9': 'Nine', 'K': 'King', 'T': 'Ten', 'A': 'Ace', 'J': 'Jack', 'Q': 'Queen' };
 var scrolled = false;
 var log_elem;
+var place_card_audio = new Array();
+var play_card_audio = new Array();
 window.addEventListener('load', function () {
+    for (var i = 0; i < 8; i++) {
+        place_card_audio.push(document.getElementById("place_card_" + i));
+    }
+    play_card_audio.push(document.getElementById("play_card_0"));
     log_elem = document.getElementById("log");
     log_elem.addEventListener("scroll", function (e) {
         if (log_elem.scrollHeight - log_elem.clientHeight - log_elem.scrollTop <= 200)
@@ -58,7 +64,7 @@ window.addEventListener('load', function () {
         }, 100);
         setInterval(function () {
             socket.send(JSON.stringify({ 'event': 'ping' }));
-        }, 5000);
+        }, 1000 * 30);
     };
     socket.onmessage = function (me) {
         try {
@@ -99,6 +105,7 @@ window.addEventListener('load', function () {
                     else {
                         document.getElementById("card-holder-" + data.player_name).append(card_elem(data.card, false, 'animate-transform-down'));
                     }
+                    play_card_audio[Math.floor(Math.random() * play_card_audio.length)].play();
                     if (data.last_trick) {
                         var last_trick = "Last Trick: ";
                         for (var i = 0; i < data.last_trick.length; i++) {
@@ -242,27 +249,33 @@ function log(msg, className) {
     if (!scrolled)
         log_elem.scrollTop = log_elem.scrollHeight;
     if (document.getElementById('log-area').classList.contains('hide-log')) {
-        var log_1 = document.getElementById("temp-log");
+        var temp_log = document.getElementById("temp-log");
         var temp_1 = document.createElement("div");
+        var temp_text = document.createElement("span");
+        temp_text.innerHTML = msg;
         temp_1.classList.add("temp-msg");
         if (className)
-            temp_1.classList.add(className);
-        temp_1.innerHTML = msg;
-        log_1.append(temp_1);
+            temp_text.classList.add(className);
+        temp_1.append(temp_text);
+        temp_log.prepend(temp_1);
         setTimeout(function () {
             temp_1.setAttribute('style', 'opacity: 0.0');
-        }, 200);
+        }, 1000);
         setTimeout(function () {
             temp_1.remove();
-        }, 1200);
+        }, 2000);
     }
 }
 function toggle_chat() {
     var toggle_chat = document.getElementById('toggle-chat');
     var log = document.getElementById('log-area');
-    var visible = !log.classList.contains("hide-log");
     log.classList.toggle("hide-log");
-    toggle_chat.innerHTML = visible ? "Show Chat" : "Hide Chat";
+    var visible = !log.classList.contains("hide-log");
+    toggle_chat.innerHTML = visible ? "Hide Chat" : "Show Chat";
+    if (visible) {
+        log_elem.scrollTop = log_elem.scrollHeight;
+        scrolled = false;
+    }
 }
 function set_turn(name) {
     var player = document.getElementById("player-" + name);
@@ -355,6 +368,7 @@ function update_hand(cards, trump, animate) {
                 for (var j = 0; j <= i; j++) {
                     hand.append(card_elem(cards[j], true));
                 }
+                place_card_audio[i % 8].play();
             }, i * 100);
         }
         else {

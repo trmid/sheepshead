@@ -8,6 +8,17 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <script src="client.js"></script>
     <link rel="stylesheet" href="client.css">
+
+    <!-- Audio -->
+    <audio src="audio/play_card_0.ogg" id="play_card_0"></audio>
+    <audio src="audio/place_card_0.ogg" id="place_card_0"></audio>
+    <audio src="audio/place_card_1.ogg" id="place_card_1"></audio>
+    <audio src="audio/place_card_2.ogg" id="place_card_2"></audio>
+    <audio src="audio/place_card_1.ogg" id="place_card_3"></audio>
+    <audio src="audio/place_card_2.ogg" id="place_card_4"></audio>
+    <audio src="audio/place_card_2.ogg" id="place_card_5"></audio>
+    <audio src="audio/place_card_0.ogg" id="place_card_6"></audio>
+    <audio src="audio/place_card_1.ogg" id="place_card_7"></audio>
 </head>
 
 <body>
@@ -94,20 +105,20 @@
                 </table>
             </div>
             <div id="text-row">
-                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..."></textarea>
+                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..." maxlength="1024"></textarea>
                 <button id="send-btn">Send</button>
             </div>
         </article>
+
+        <div id="temp-log">
+
+        </div>
 
     </main>
 
     <footer>
         &copy; 2020 Trevor Richard
     </footer>
-
-    <div id="temp-log">
-
-    </div>
 </body>
 
 </html>

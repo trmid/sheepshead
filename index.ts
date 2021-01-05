@@ -793,16 +793,23 @@ class Table {
         // Send all player and personal hand data to each player
         const messages = new Array<Promise<boolean>>();
         const dealer_name = this.players[this.dealer % 4].name;
-        this.players.forEach(player => {
+        for (let i = 0; i < this.players.length; i++) {
+            const player = this.players[i];
+
+            // Get other players in the order of the table play. (First is always after you, last is before you)
+            const other_players: any[] = [];
+            for (let j = 1; j < this.players.length; j++) {
+                const p = this.players[(i + j) % this.players.length];
+                other_players.push({
+                    name: p.name,
+                    balance: p.balance,
+                    dealer: p.name === dealer_name
+                });
+            }
+
             const msg = {
                 event: 'table-update',
-                other_players: this.players.map(p => {
-                    return {
-                        name: p.name,
-                        balance: p.balance,
-                        dealer: p.name === dealer_name
-                    };
-                }).filter(p => { return p.name != player.name; }),
+                other_players: other_players,
                 me: {
                     name: player.name,
                     balance: player.balance,
@@ -811,7 +818,7 @@ class Table {
                 my_hand: Array.from(player.hand.keys())
             }
             messages.push(player.send(msg));
-        });
+        }
         return Promise.all(messages);
     }
 
