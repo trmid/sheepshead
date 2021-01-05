@@ -406,7 +406,7 @@ input[type=checkbox]{
     width: 20%;
 }
 
-#log .suit-img.suit-sm {
+#log .suit-img.suit-sm, #temp-log .suit-img.suit-sm {
     height: 1em;
 }
 

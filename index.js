@@ -86,6 +86,7 @@ function handle_msg(socket, msg, player) {
     return __awaiter(this, void 0, void 0, function* () {
         if (typeof msg !== 'string')
             return;
+        players_active = true;
         const data = JSON.parse(msg);
         console.log(data);
         switch (data.event) {

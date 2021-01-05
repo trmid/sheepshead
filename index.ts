@@ -94,6 +94,7 @@ function valid_pass(pass: string, hashed: string) {
 
 async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
     if (typeof msg !== 'string') return;
+    players_active = true;
     const data = JSON.parse(msg);
     console.log(data);
     switch (data.event) {
