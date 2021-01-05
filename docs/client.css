@@ -14,11 +14,13 @@
 html,body{
     margin: 0;
     padding: 0;
-}
+    overflow: hidden;
 
-html{
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 body{
@@ -27,8 +29,16 @@ body{
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    min-height: 100%;
+    height: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+
+    overflow-y: auto;
 }
 
 /* HEADER */
@@ -41,7 +51,7 @@ header{
 
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
 }
@@ -50,13 +60,14 @@ header h2 {
     margin: 0;
 }
 
+#log-area.hide-log{
+    display: none;
+}
+
 /* FOOTER */
 
 footer{
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    padding: 0.5em;
+    margin: 0.5em;
     color: var(--light);
     text-shadow: 1px 1px 2px black;
 }
@@ -64,18 +75,21 @@ footer{
 /* MAIN */
 
 main{
+    flex: 1 0 auto;
+
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+
+    position: relative;
 }
 
 /* GAME AREA */
 
 #game-area{
     flex-grow: 1;
-    min-height: 90vh;
 
     display: flex;
     flex-direction: column;
@@ -93,34 +107,46 @@ main{
 }
 
 #play-area{
-    flex-grow: 1;
     position: relative;
 
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    align-items: stretch;
+    align-items: center;
 }
 
 #card-shelf, #my-card-shelf{
-    flex-grow: 1;
-
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-evenly;
     align-items: center;
+
+    width: 100%;
+    min-height: 14em;
 }
 
 #round-options{
     text-align: center;
+    padding: 0.25em;
+    margin: 0.5em;
+    background-color: var(--light);
+    border-radius: 0.25em;
+    box-shadow: 2px 2px 7px black;
+}
+
+#solo-deux-container{
+    padding: 0.5em;
+    margin: 0.5em;
+    border: 1px solid black;
+    border-radius: 0.25em;
 }
 
 #my-shelf{
     display: flex;
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: stretch;
 }
@@ -162,6 +188,10 @@ main{
     box-shadow: 2px 2px 7px black;
 }
 
+.player.player-turn{
+    box-shadow: 0 0 7px 3px dodgerblue !important;
+}
+
 .player.ready{
     border: 1px solid green;
     font-weight: bold;
@@ -183,10 +213,9 @@ main{
 /* LOG */
 
 #log-area{
-    flex-grow: 1;
-    flex-shrink: 1;
     margin: 0.5em;
-    max-height: 80vh;
+    max-height: 88vh;
+    max-width: 40em;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -215,23 +244,39 @@ main{
 
 #log th{
     color: #888;
-    width: max-content;
+    min-width: 7em;
 }
 
-#log td.error{
+#log td.error, .temp-msg.error{
     color: crimson;
 }
 
-#log td.server{
+#log td.server, .temp-msg.server{
     color: orange;
 }
 
-#log td.game{
+#log td.game, .temp-msg.game{
     color: green;
 }
 
-#log td.strategy{
+#log td.strategy, .temp-msg.strategy{
     color: dodgerblue;
+}
+
+#log td.announcement, .temp-msg.announcement{
+    font-weight: bold;
+    color: var(--dark);
+}
+
+#log tr.fade-in{
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    opacity: 0;
+    transform: translate(-20%, 0);
+}
+
+#log tr.visible{
+    opacity: 1.0 !important;
+    transform: translate(0, 0);
 }
 
 #log tr:nth-child(odd){
@@ -245,11 +290,6 @@ fieldset{
 fieldset th, fieldset td{
     padding: 0.2em;
     text-align: left;
-}
-
-footer{
-    padding: 0.5em;
-    margin-top: 1em;
 }
 
 input[type=text], input[type=password], input[type=submit], select, button{
@@ -302,6 +342,11 @@ input[type=checkbox]{
     flex-wrap: wrap;
 }
 
+.card-holder{
+    min-width: 5em;
+    min-height: 7em;
+}
+
 .card{
     width: 5em;
     height: 7em;
@@ -319,11 +364,17 @@ input[type=checkbox]{
 }
 
 .card.winner{
-    box-shadow: 0 0 2px 7px gold;
+    box-shadow: 0 0 7px 3px dodgerblue;
+}
+
+.card.playable{
+    transition: transform 50ms ease-in-out, box-shadow 50ms ease-in-out;
+    transform: translate(0, 0);
 }
 
 .card.playable:hover{
-    transform: translate(-2px, -2px);
+    transform: translate(-2px, -6px);
+    box-shadow: 2px 2px 7px black;
 }
 
 .card.H, .card.D{
@@ -336,7 +387,7 @@ input[type=checkbox]{
 
 .card-value{
     position: absolute;
-    padding: 0.25em;
+    margin: 5%;
     left: 0;
     top: 0;
     font-size: 1em;
@@ -344,15 +395,15 @@ input[type=checkbox]{
 }
 
 .card .suit-img{
-    width: 60%;
+    width: 40%;
 }
 
 .card .suit-img.suit-sm{
     position: absolute;
     left: 0;
     bottom: 0;
-    padding: 0.25em;
-    width: 1em;
+    margin: 5%;
+    width: 20%;
 }
 
 #log .suit-img.suit-sm {
@@ -376,4 +427,69 @@ input[type=checkbox]{
 .animate-transform{
     transform: translate(0, 0);
     opacity: 1.0;
+}
+
+/* ERROR LOG */
+
+#temp-log{
+    position: fixed;
+    right: 0.5em;
+    bottom: 0.5em;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.temp-msg{
+    background-color: var(--light);
+    color: black;
+    padding: 0.5em;
+    margin: 0.25em;
+    box-shadow: 2px 2px 7px black;
+    border-radius: 0.25em;
+    opacity: 1.0;
+
+    transition: opacity 1s ease-in;
+}
+
+/* MOBILE */
+
+@media only screen and (max-width: 768px){
+
+    #log-area{
+        margin: 0;
+        max-height: 90%;
+        max-width: unset;
+
+        position: absolute;
+        top: 0.5em;
+        left: 0.5em;
+        right: 0.5em;
+
+        opacity: 0.9;
+    }
+
+    #card-shelf, #my-card-shelf{
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-evenly;
+        align-items: center;
+    
+        min-height: 3.5em;
+    }
+
+    .card{
+        height: 3.5em;
+        width: 2.5em;
+    }
+
+    .card-value{
+        font-size: 0.7;
+    }
+
+    #my-hand{
+        min-width: 90vw;
+    }
+
 }

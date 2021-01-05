@@ -245,7 +245,7 @@ function handle_msg(socket, msg, player) {
             case 'ready': {
                 try {
                     if (player) {
-                        (_a = player.table.round) === null || _a === void 0 ? void 0 : _a.call(player, data.call, data.suit, data.val);
+                        (_a = player.table.round) === null || _a === void 0 ? void 0 : _a.call(player, data.call, data.deux, data.suit, data.val);
                     }
                 }
                 catch (err) {
@@ -436,12 +436,12 @@ class Round {
                     winners = teams[1];
                     losers = teams[0];
                 }
-                if (this.solo) {
+                if (this.solo_deux) {
+                    payment = 24 * multiplier;
+                }
+                else if (this.solo) {
                     payment = 4 * multiplier;
-                    if (!losers.trick && winners.players[0] == this.solo_player) {
-                        payment = 24 * multiplier;
-                    }
-                    else if (winners.black_queens) {
+                    if (winners.black_queens) {
                         if (winners.dealt.get('QH')) {
                             if (winners.dealt.get('QD')) {
                                 payment += 4 * multiplier;
@@ -470,7 +470,7 @@ class Round {
                         }
                     }
                 }
-                if (losers.black_queens) {
+                if (losers.black_queens && !this.solo_deux) {
                     payment *= 2;
                 }
                 if (this.solo && this.solo_player) {
@@ -518,6 +518,7 @@ class Round {
                     player_turn: next_player.name,
                     card: card,
                     trick: trick,
+                    last_trick: trick.length == 1 ? this.last_trick : undefined,
                     trump: this.trump(),
                     my_hand: Array.from(player.hand.keys()),
                     winner: winner === null || winner === void 0 ? void 0 : winner.name,
@@ -539,7 +540,7 @@ class Round {
             return res;
         });
     }
-    call(player, call, suit, val) {
+    call(player, call, solo_deux, suit, val) {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.player_ready.get(player)) {
                 player.send({
@@ -568,7 +569,10 @@ class Round {
                 if (!this.solo || this.solo !== 'D' && suit === 'D') {
                     this.solo = suit;
                     this.solo_player = player;
-                    this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo!`;
+                    if (queens) {
+                        this.solo_deux = solo_deux;
+                    }
+                    this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_deux ? ' Deux' : ''}!`;
                 }
             }
             else if (val === undefined) {
@@ -602,9 +606,8 @@ class Round {
                     }
                     else if (this.chosen_card && this.queens_player) {
                         const card = this.chosen_card;
-                        this.team1.push(this.queens_player);
                         this.table.players.forEach(player => {
-                            if (player.hand.get(card)) {
+                            if (player.hand.get(card) || player == this.queens_player) {
                                 this.team1.push(player);
                             }
                             else {

@@ -1,12 +1,14 @@
 var socket;
 var my_name;
 var clear_table = false;
+var suits = { 'D': 'Diamonds', 'H': 'Hearts', 'S': 'Spades', 'C': 'Clubs' };
+var vals = { '7': 'Seven', '8': 'Eight', '9': 'Nine', 'K': 'King', 'T': 'Ten', 'A': 'Ace', 'J': 'Jack', 'Q': 'Queen' };
 var scrolled = false;
 var log_elem;
 window.addEventListener('load', function () {
     log_elem = document.getElementById("log");
-    log_elem.addEventListener("scroll", function () {
-        if (log_elem.scrollHeight - log_elem.clientHeight - log_elem.scrollTop <= 5)
+    log_elem.addEventListener("scroll", function (e) {
+        if (log_elem.scrollHeight - log_elem.clientHeight - log_elem.scrollTop <= 200)
             scrolled = false;
         else
             scrolled = true;
@@ -15,11 +17,13 @@ window.addEventListener('load', function () {
     var send_text = document.getElementById("send-text");
     var send_msg = function () {
         var msg = send_text.value;
-        socket.send(JSON.stringify({
-            event: 'msg',
-            msg: msg
-        }));
-        send_text.value = "";
+        if (msg.length > 0) {
+            socket.send(JSON.stringify({
+                event: 'msg',
+                msg: msg
+            }));
+            send_text.value = "";
+        }
     };
     send_btn.addEventListener("click", send_msg);
     send_text.addEventListener("keypress", function (e) {
@@ -30,13 +34,28 @@ window.addEventListener('load', function () {
     });
     socket = new WebSocket("ws://localhost:3000");
     socket.onclose = function () {
-        log("You have been disconnected from the server...", "error");
+        var msg = "You have been disconnected from the server... Please reload the page and try again.";
+        log(msg, "error");
     };
     socket.onopen = function () {
         socket.send(JSON.stringify({
             event: "connected"
         }));
-        log("Connected to server...");
+        log("Connected to server!", "server");
+        document.getElementById("table-form").removeAttribute("style");
+        log("Welcome to Sheepshead Online!", "announcement");
+        setTimeout(function () {
+            log("Play with others by creating a table and sharing the table name and password with other players.", "announcement");
+            setTimeout(function () {
+                log("Already have a table? Enter the table name and password in the form to join the table.", "announcement");
+                setTimeout(function () {
+                    log("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", "announcement");
+                    setTimeout(function () {
+                        log("Have fun :)", "announcement");
+                    }, 100);
+                }, 100);
+            }, 100);
+        }, 100);
         setInterval(function () {
             socket.send(JSON.stringify({ 'event': 'ping' }));
         }, 5000);
@@ -57,7 +76,7 @@ window.addEventListener('load', function () {
                     var table_form = document.getElementById('table-form');
                     if (table_form)
                         table_form.remove();
-                    (document.getElementById('my-shelf')).removeAttribute('style');
+                    (document.getElementById('game-area')).removeAttribute('style');
                     break;
                 }
                 case 'player-joined':
@@ -69,12 +88,23 @@ window.addEventListener('load', function () {
                 case 'card-played': {
                     if (clear_table) {
                         clear_table_cards();
+                        var last_trick = Array.from(document.getElementsByClassName("game"));
+                        last_trick.forEach(function (msg) {
+                            msg.parentElement.remove();
+                        });
                     }
                     if (data.player_name === my_name) {
                         document.getElementById("my-card-shelf").append(card_elem(data.card, false, 'animate-transform-up'));
                     }
                     else {
                         document.getElementById("card-holder-" + data.player_name).append(card_elem(data.card, false, 'animate-transform-down'));
+                    }
+                    if (data.last_trick) {
+                        var last_trick = "Last Trick: ";
+                        for (var i = 0; i < data.last_trick.length; i++) {
+                            last_trick += text_card(data.last_trick[i]) + (i < data.last_trick.length - 1 ? ',' : '');
+                        }
+                        log(last_trick, 'game');
                     }
                     log(data.player_name + " played " + text_card(data.card) + ".", "game");
                     if (data.winner) {
@@ -84,6 +114,7 @@ window.addEventListener('load', function () {
                         card_holder.getElementsByClassName('card')[0].classList.add('winner');
                     }
                     if (data.player_turn) {
+                        set_turn(data.player_turn);
                         log("It is " + data.player_turn + "'" + (data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's') + " turn to play a card...", 'game');
                     }
                     update_hand(data.my_hand, data.trump);
@@ -94,9 +125,9 @@ window.addEventListener('load', function () {
                         }
                         log(winners + " " + (data.winners.players.length > 1 ? 'have' : 'has') + " won the round with " + data.winners.points + " points! Winnings: $" + data.payment.toFixed(2), "strategy");
                         var balances = '';
-                        var players = data.winners.players.concat(data.losers.players);
-                        for (var i = 0; i < players.length; i++) {
-                            balances += "[" + players[i].name + ": $" + players[i].balance.toFixed(2) + "] ";
+                        var players_1 = data.winners.players.concat(data.losers.players);
+                        for (var i = 0; i < players_1.length; i++) {
+                            balances += "[" + players_1[i].name + ": $" + players_1[i].balance.toFixed(2) + "] ";
                         }
                         log("Player Balances: " + balances, 'strategy');
                     }
@@ -104,7 +135,7 @@ window.addEventListener('load', function () {
                 }
                 case 'deal':
                     clear_table_cards();
-                    log("Cards have been dealt!", 'game');
+                    log("Cards have been dealt! Waiting for players to ready up...", 'game');
                     update_hand(data.cards, 'D', true);
                     start_round(data.cards);
                     break;
@@ -122,6 +153,7 @@ window.addEventListener('load', function () {
                         var player = data.other_players[i];
                         player_shelf.append(player_elem(player));
                         var card_holder = document.createElement("div");
+                        card_holder.classList.add("card-holder");
                         card_holder.id = "card-holder-" + player.name;
                         card_shelf.append(card_holder);
                     }
@@ -144,12 +176,23 @@ window.addEventListener('load', function () {
                     break;
                 }
                 case 'round-start':
-                    document.getElementById('round-options').innerHTML = "";
+                    var round_options = document.getElementById('round-options');
+                    round_options.innerHTML = "";
+                    round_options.setAttribute("style", "display: none");
                     if (data.strategy_call) {
                         log(data.strategy_call, 'strategy');
+                        window.alert(data.strategy_call);
                     }
+                    set_turn(data.player_turn);
                     log("It is " + data.player_turn + "'" + (data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's') + " turn to play a card...", 'game');
                     update_hand(data.my_hand, data.trump);
+                    var players = Array.from(document.getElementsByClassName("player"));
+                    players.forEach(function (elem) {
+                        elem.classList.remove("ready");
+                        Array.from(elem.getElementsByClassName("player-ready")).forEach(function (elem) {
+                            elem.remove();
+                        });
+                    });
                     break;
             }
         }
@@ -191,9 +234,43 @@ function log(msg, className) {
     data.classList.add(className);
     row.append(head);
     row.append(data);
+    row.classList.add("fade-in");
+    setTimeout(function () {
+        row.classList.add("visible");
+    }, 0);
     document.getElementById("log-messages").append(row);
     if (!scrolled)
         log_elem.scrollTop = log_elem.scrollHeight;
+    if (document.getElementById('log-area').classList.contains('hide-log')) {
+        var log_1 = document.getElementById("temp-log");
+        var temp_1 = document.createElement("div");
+        temp_1.classList.add("temp-msg");
+        if (className)
+            temp_1.classList.add(className);
+        temp_1.innerHTML = msg;
+        log_1.append(temp_1);
+        setTimeout(function () {
+            temp_1.setAttribute('style', 'opacity: 0.0');
+        }, 0);
+        setTimeout(function () {
+            temp_1.remove();
+        }, 1000);
+    }
+}
+function toggle_chat() {
+    var toggle_chat = document.getElementById('toggle-chat');
+    var log = document.getElementById('log-area');
+    var visible = !log.classList.contains("hide-log");
+    log.classList.toggle("hide-log");
+    toggle_chat.innerHTML = visible ? "Show Chat" : "Hide Chat";
+}
+function set_turn(name) {
+    var player = document.getElementById("player-" + name);
+    var last_turn = Array.from(document.getElementsByClassName('player-turn'));
+    last_turn.forEach(function (elem) {
+        elem.classList.remove('player-turn');
+    });
+    player.classList.add("player-turn");
 }
 function player_elem(player) {
     var elem = document.createElement("div");
@@ -359,6 +436,7 @@ function start_round(cards) {
     var queens = cards.includes('QC') && cards.includes('QS');
     var round_options = document.getElementById("round-options");
     round_options.innerHTML = "";
+    round_options.removeAttribute("style");
     var ready = document.createElement("button");
     ready.innerHTML = "Ready";
     ready.addEventListener("click", function () {
@@ -382,44 +460,61 @@ function start_round(cards) {
     var trump_solo = document.createElement("button");
     trump_solo.innerHTML = "Trump Solo";
     trump_solo.addEventListener("click", function () {
+        var _a;
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'D'
+            suit: 'D',
+            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
         }));
     });
     round_options.append(trump_solo);
     var heart_solo = document.createElement("button");
     heart_solo.innerHTML = "Heart Solo";
     heart_solo.addEventListener("click", function () {
+        var _a;
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'H'
+            suit: 'H',
+            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
         }));
     });
     round_options.append(heart_solo);
     var spade_solo = document.createElement("button");
     spade_solo.innerHTML = "Spade Solo";
     spade_solo.addEventListener("click", function () {
+        var _a;
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'S'
+            suit: 'S',
+            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
         }));
     });
     round_options.append(spade_solo);
     var club_solo = document.createElement("button");
     club_solo.innerHTML = "Club Solo";
     club_solo.addEventListener("click", function () {
+        var _a;
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'C'
+            suit: 'C',
+            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
         }));
     });
     round_options.append(club_solo);
     if (queens) {
+        var solo_deux_container = document.createElement("span");
+        solo_deux_container.id = 'solo-deux-container';
+        var solo_deux = document.createElement("input");
+        solo_deux.type = 'checkbox';
+        solo_deux.checked = false;
+        solo_deux.id = "solo-deux";
+        solo_deux_container.innerHTML = "Solo Deux ";
+        solo_deux_container.append(solo_deux);
+        round_options.append(solo_deux_container);
         var gets_along = document.createElement("button");
         gets_along.innerHTML = "... Gets Along";
         gets_along.addEventListener("click", function () {
@@ -431,10 +526,20 @@ function start_round(cards) {
                 val: card.charAt(0)
             }));
         });
-        var get_along_card = document.createElement("input");
+        var get_along_card = document.createElement("select");
         get_along_card.id = "get_along_card";
-        get_along_card.value = 'AS';
-        get_along_card.type = 'text';
+        get_along_card.setAttribute("placeholder", "Select a Card...");
+        var val_keys = Object.keys(vals);
+        var suit_keys = Object.keys(suits);
+        for (var s = 0; s < suit_keys.length; s++) {
+            for (var v = 0; v < val_keys.length; v++) {
+                var card = val_keys[v] + suit_keys[s];
+                var option = document.createElement("option");
+                option.innerHTML = vals[val_keys[v]] + " of " + suits[suit_keys[s]];
+                option.value = card;
+                get_along_card.append(option);
+            }
+        }
         round_options.append(get_along_card);
         round_options.append(gets_along);
     }

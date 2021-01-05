@@ -3,6 +3,9 @@ let socket: WebSocket;
 let my_name: string;
 let clear_table = false;
 
+const suits: any = { 'D': 'Diamonds', 'H': 'Hearts', 'S': 'Spades', 'C': 'Clubs' };
+const vals: any = { '7': 'Seven', '8': 'Eight', '9': 'Nine', 'K': 'King', 'T': 'Ten', 'A': 'Ace', 'J': 'Jack', 'Q': 'Queen' };
+
 // Log Scroll check
 let scrolled = false;
 let log_elem: HTMLElement;
@@ -10,8 +13,8 @@ let log_elem: HTMLElement;
 window.addEventListener('load', () => {
 
     log_elem = document.getElementById("log");
-    log_elem.addEventListener("scroll", () => {
-        if (log_elem.scrollHeight - log_elem.clientHeight - log_elem.scrollTop <= 5) scrolled = false;
+    log_elem.addEventListener("scroll", (e) => {
+        if (log_elem.scrollHeight - log_elem.clientHeight - log_elem.scrollTop <= 200) scrolled = false;
         else scrolled = true;
     });
 
@@ -19,11 +22,13 @@ window.addEventListener('load', () => {
     const send_text = <HTMLTextAreaElement>document.getElementById("send-text");
     const send_msg = () => {
         const msg = send_text.value;
-        socket.send(JSON.stringify({
-            event: 'msg',
-            msg: msg
-        }));
-        send_text.value = "";
+        if (msg.length > 0) {
+            socket.send(JSON.stringify({
+                event: 'msg',
+                msg: msg
+            }));
+            send_text.value = "";
+        }
     };
     send_btn.addEventListener("click", send_msg);
     send_text.addEventListener("keypress", (e) => {
@@ -43,14 +48,31 @@ window.addEventListener('load', () => {
     socket = new WebSocket("ws://localhost:3000");
 
     socket.onclose = () => {
-        log("You have been disconnected from the server...", "error");
+        const msg = "You have been disconnected from the server... Please reload the page and try again.";
+        log(msg, "error");
     };
 
     socket.onopen = () => {
         socket.send(JSON.stringify({
             event: "connected"
         }));
-        log("Connected to server...");
+        log("Connected to server!", "server");
+        document.getElementById("table-form").removeAttribute("style"); // show table form
+
+        log("Welcome to Sheepshead Online!", "announcement");
+        setTimeout(() => {
+            log("Play with others by creating a table and sharing the table name and password with other players.", "announcement");
+            setTimeout(() => {
+                log("Already have a table? Enter the table name and password in the form to join the table.", "announcement");
+                setTimeout(() => {
+                    log("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", "announcement");
+                    setTimeout(() => {
+                        log("Have fun :)", "announcement");
+                    }, 100);
+                }, 100);
+            }, 100);
+        }, 100);
+
         setInterval(() => {
             socket.send(JSON.stringify({ 'event': 'ping' }));
         }, 5000);
@@ -73,7 +95,7 @@ window.addEventListener('load', () => {
                     const table_form = document.getElementById('table-form')
                     if (table_form) table_form.remove();
                     // show the player shelf
-                    (document.getElementById('my-shelf')).removeAttribute('style');
+                    (document.getElementById('game-area')).removeAttribute('style');
                     break;
                 }
                 case 'player-joined':
@@ -87,11 +109,25 @@ window.addEventListener('load', () => {
                     // Append to table
                     if (clear_table) {
                         clear_table_cards();
+                        // Also clear last trick messages
+                        const last_trick = Array.from(document.getElementsByClassName("game"));
+                        last_trick.forEach(msg => {
+                            msg.parentElement.remove();
+                        });
                     }
                     if (data.player_name === my_name) {
                         document.getElementById("my-card-shelf").append(card_elem(data.card, false, 'animate-transform-up'));
                     } else {
                         document.getElementById(`card-holder-${data.player_name}`).append(card_elem(data.card, false, 'animate-transform-down'));
+                    }
+
+                    // Log last trick
+                    if (data.last_trick) {
+                        let last_trick = "Last Trick: ";
+                        for (let i = 0; i < data.last_trick.length; i++) {
+                            last_trick += text_card(data.last_trick[i]) + (i < data.last_trick.length - 1 ? ',' : '');
+                        }
+                        log(last_trick, 'game');
                     }
 
                     // log
@@ -103,6 +139,7 @@ window.addEventListener('load', () => {
                         card_holder.getElementsByClassName('card')[0].classList.add('winner');
                     }
                     if (data.player_turn) {
+                        set_turn(data.player_turn);
                         log(`It is ${data.player_turn}'${data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's'} turn to play a card...`, 'game');
                     }
                     update_hand(data.my_hand, data.trump);
@@ -131,7 +168,7 @@ window.addEventListener('load', () => {
                     // Remove last trick
                     clear_table_cards();
 
-                    log(`Cards have been dealt!`, 'game');
+                    log(`Cards have been dealt! Waiting for players to ready up...`, 'game');
                     update_hand(data.cards, 'D', true);
                     start_round(data.cards);
                     break;
@@ -153,6 +190,7 @@ window.addEventListener('load', () => {
                         player_shelf.append(player_elem(player));
 
                         const card_holder = document.createElement("div");
+                        card_holder.classList.add("card-holder");
                         card_holder.id = `card-holder-${player.name}`;
                         card_shelf.append(card_holder);
                     }
@@ -177,12 +215,26 @@ window.addEventListener('load', () => {
                     break;
                 }
                 case 'round-start':
-                    document.getElementById('round-options').innerHTML = "";
+                    const round_options = document.getElementById('round-options');
+                    round_options.innerHTML = "";
+                    round_options.setAttribute("style", "display: none");
                     if (data.strategy_call) {
                         log(data.strategy_call, 'strategy');
+                        window.alert(data.strategy_call);
                     }
+                    set_turn(data.player_turn);
                     log(`It is ${data.player_turn}'${data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's'} turn to play a card...`, 'game');
                     update_hand(data.my_hand, data.trump);
+
+                    // Remove ready markers
+                    const players = Array.from(document.getElementsByClassName("player"));
+                    players.forEach(elem => {
+                        elem.classList.remove("ready");
+                        Array.from(elem.getElementsByClassName("player-ready")).forEach(elem => {
+                            elem.remove();
+                        });
+                    })
+
                     break;
             }
         } catch (err) {
@@ -224,8 +276,47 @@ function log(msg: string, className = "none") {
     data.classList.add(className);
     row.append(head);
     row.append(data);
+    row.classList.add("fade-in");
+    setTimeout(() => {
+        row.classList.add("visible");
+    }, 0);
     document.getElementById("log-messages").append(row);
     if (!scrolled) log_elem.scrollTop = log_elem.scrollHeight;
+
+    // temp log if chat not visible
+    if (document.getElementById('log-area').classList.contains('hide-log')) {
+        const log = document.getElementById("temp-log");
+        const temp = document.createElement("div");
+        temp.classList.add("temp-msg");
+        if (className) temp.classList.add(className);
+        temp.innerHTML = msg;
+        log.append(temp);
+        setTimeout(() => {
+            temp.setAttribute('style', 'opacity: 0.0');
+        }, 200);
+        setTimeout(() => {
+            temp.remove();
+        }, 1200);
+    }
+}
+
+// Toggle chat
+function toggle_chat() {
+    const toggle_chat = document.getElementById('toggle-chat');
+    const log = document.getElementById('log-area');
+    const visible = !log.classList.contains("hide-log");
+    log.classList.toggle("hide-log");
+    toggle_chat.innerHTML = visible ? "Show Chat" : "Hide Chat";
+}
+
+// Set player turn
+function set_turn(name: string) {
+    const player = document.getElementById(`player-${name}`);
+    const last_turn = Array.from(document.getElementsByClassName('player-turn'));
+    last_turn.forEach(elem => {
+        elem.classList.remove('player-turn');
+    });
+    player.classList.add("player-turn");
 }
 
 // Create Player Element
@@ -416,6 +507,7 @@ function start_round(cards: string[]) {
 
     const round_options = document.getElementById("round-options");
     round_options.innerHTML = "";
+    round_options.removeAttribute("style");
 
     const ready = document.createElement("button");
     ready.innerHTML = "Ready";
@@ -445,7 +537,8 @@ function start_round(cards: string[]) {
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'D'
+            suit: 'D',
+            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
         }));
     });
     round_options.append(trump_solo);
@@ -456,7 +549,8 @@ function start_round(cards: string[]) {
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'H'
+            suit: 'H',
+            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
         }));
     });
     round_options.append(heart_solo);
@@ -467,7 +561,8 @@ function start_round(cards: string[]) {
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'S'
+            suit: 'S',
+            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
         }));
     });
     round_options.append(spade_solo);
@@ -478,12 +573,24 @@ function start_round(cards: string[]) {
         socket.send(JSON.stringify({
             event: 'ready',
             call: 'solo',
-            suit: 'C'
+            suit: 'C',
+            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
         }));
     });
     round_options.append(club_solo);
 
     if (queens) {
+
+        const solo_deux_container = document.createElement("span");
+        solo_deux_container.id = 'solo-deux-container';
+        const solo_deux = document.createElement("input");
+        solo_deux.type = 'checkbox';
+        solo_deux.checked = false;
+        solo_deux.id = "solo-deux";
+        solo_deux_container.innerHTML = "Solo Deux ";
+        solo_deux_container.append(solo_deux);
+        round_options.append(solo_deux_container);
+
         const gets_along = document.createElement("button");
         gets_along.innerHTML = "... Gets Along";
         gets_along.addEventListener("click", () => {
@@ -496,10 +603,21 @@ function start_round(cards: string[]) {
             }))
         });
 
-        const get_along_card = document.createElement("input");
+        const get_along_card = document.createElement("select");
         get_along_card.id = "get_along_card";
-        get_along_card.value = 'AS';
-        get_along_card.type = 'text';
+        get_along_card.setAttribute("placeholder", "Select a Card...");
+        const val_keys = Object.keys(vals);
+        const suit_keys = Object.keys(suits);
+        for (let s = 0; s < suit_keys.length; s++) {
+            for (let v = 0; v < val_keys.length; v++) {
+                const card = val_keys[v] + suit_keys[s];
+                const option = document.createElement("option");
+                option.innerHTML = vals[val_keys[v]] + " of " + suits[suit_keys[s]];
+                option.value = card;
+                get_along_card.append(option);
+            }
+        }
+
         round_options.append(get_along_card);
         round_options.append(gets_along);
     }

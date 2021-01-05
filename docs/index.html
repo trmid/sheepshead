@@ -13,10 +13,11 @@
 <body>
     <header>
         <h2>Sheepshead</h2>
+        <button id="toggle-chat" onclick="toggle_chat();">Hide Chat</button>
     </header>
     <main>
 
-        <form id="table-form" action="javascript:join_table();">
+        <form id="table-form" action="javascript:join_table();" style="display: none;">
             <fieldset>
                 <legend>Create or Join a Table</legend>
                 <table>
@@ -49,7 +50,7 @@
             </fieldset>
         </form>
 
-        <article id="game-area">
+        <article id="game-area" style="display: none;">
             <div id="player-shelf">
 
             </div>
@@ -63,12 +64,12 @@
 
                 </div>
 
-                <div id="round-options">
+                <div id="round-options" style="display: none;">
 
                 </div>
 
             </div>
-            <div id="my-shelf" style="display: none;">
+            <div id="my-shelf">
                 <div id="me">
 
                 </div>
@@ -87,8 +88,8 @@
             <div id="log">
                 <table id="log-messages">
                     <tr>
-                        <th>Begin Log...</th>
-                        <td></td>
+                        <th>Event Log</th>
+                        <td>Connecting to the server...</td>
                     </tr>
                 </table>
             </div>
@@ -103,6 +104,10 @@
     <footer>
         &copy; 2020 Trevor Richard
     </footer>
+
+    <div id="temp-log">
+
+    </div>
 </body>
 
 </html>
