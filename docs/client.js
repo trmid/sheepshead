@@ -32,7 +32,7 @@ window.addEventListener('load', function () {
             send_msg();
         }
     });
-    socket = new WebSocket("ws://localhost:3000");
+    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
     socket.onclose = function () {
         var msg = "You have been disconnected from the server... Please reload the page and try again.";
         log(msg, "error");
@@ -251,10 +251,10 @@ function log(msg, className) {
         log_1.append(temp_1);
         setTimeout(function () {
             temp_1.setAttribute('style', 'opacity: 0.0');
-        }, 0);
+        }, 200);
         setTimeout(function () {
             temp_1.remove();
-        }, 1000);
+        }, 1200);
     }
 }
 function toggle_chat() {
