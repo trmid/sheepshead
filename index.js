@@ -442,16 +442,6 @@ class Round {
                 }
                 else if (this.solo) {
                     payment = 4 * multiplier;
-                    if (winners.black_queens) {
-                        if (winners.dealt.get('QH')) {
-                            if (winners.dealt.get('QD')) {
-                                payment += 4 * multiplier;
-                            }
-                            else {
-                                payment += 3 * multiplier;
-                            }
-                        }
-                    }
                 }
                 else {
                     payment = 2 * multiplier;
@@ -459,6 +449,8 @@ class Round {
                         payment += multiplier * 2;
                     if (!losers.trick)
                         payment += multiplier * 2;
+                }
+                if (!this.solo_deux) {
                     const team = winners.black_queens ? winners : (losers.black_queens ? losers : undefined);
                     if (team) {
                         if (team.dealt.get('QH')) {

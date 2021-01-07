@@ -495,19 +495,14 @@ class Round {
                 payment = 24 * multiplier;
             } else if (this.solo) {
                 payment = 4 * multiplier;
-                if (winners.black_queens) {
-                    if (winners.dealt.get('QH')) {
-                        if (winners.dealt.get('QD')) {
-                            payment += 4 * multiplier;
-                        } else {
-                            payment += 3 * multiplier;
-                        }
-                    }
-                }
             } else {
                 payment = 2 * multiplier;
                 if (losers.points < 31) payment += multiplier * 2 // no schneider
                 if (!losers.trick) payment += multiplier * 2; // no trick
+            }
+
+            // Add payment for queens if not solo deux
+            if (!this.solo_deux) {
                 const team = winners.black_queens ? winners : (losers.black_queens ? losers : undefined);
                 if (team) {
                     if (team.dealt.get('QH')) {
