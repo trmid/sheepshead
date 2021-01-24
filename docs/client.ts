@@ -609,7 +609,7 @@ function start_round(cards: string[]) {
         solo_deux.type = 'checkbox';
         solo_deux.checked = false;
         solo_deux.id = "solo-deux";
-        solo_deux_container.innerHTML = "Solo Deux ";
+        solo_deux_container.innerHTML = "Solo Du ";
         solo_deux_container.append(solo_deux);
         round_options.append(solo_deux_container);
 

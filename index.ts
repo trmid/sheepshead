@@ -639,7 +639,7 @@ class Round {
                 if (queens) {
                     this.solo_deux = !!solo_deux;
                 }
-                this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_deux ? ' Deux' : ''}!`;
+                this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_deux ? ' Du' : ''}!`;
             }
         } else if (val === undefined) {
             bad_call = true;
