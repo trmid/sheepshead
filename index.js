@@ -421,12 +421,12 @@ class Round {
                         }
                     }
                     else if (teams[0].black_queens) {
-                        winners = teams[0];
-                        losers = teams[1];
-                    }
-                    else {
                         winners = teams[1];
                         losers = teams[0];
+                    }
+                    else {
+                        winners = teams[0];
+                        losers = teams[1];
                     }
                 }
                 else if (teams[0].points > teams[1].points) {
