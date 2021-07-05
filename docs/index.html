@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <script src="client.js"></script>
     <link rel="stylesheet" href="client.css">
+    <link rel="shortcut icon" href="img/diamond.png" type="image/png">
 
     <!-- Audio -->
     <audio src="audio/play_card_0.ogg" id="play_card_0"></audio>
@@ -85,9 +86,12 @@
 
                 </div>
                 <div id="my-options">
-                    <button id="toggle-sort-hand" onclick="this.children[0].click();"><input type="checkbox" id="sort-hand" checked /> Sort Hand</button>
+                    <button id="toggle-sort-hand" onclick="this.children[0].click();"><input type="checkbox"
+                            id="sort-hand" checked /> Sort Hand</button>
                     <br>
-                    <button onclick="if(window.confirm('This is a development feature and will deal a new hand. Are you sure you want to do this?')) socket.send(JSON.stringify({event: 'deal-again'}));">Deal Again</button>
+                    <button
+                        onclick="if(window.confirm('This is a development feature and will deal a new hand. Are you sure you want to do this?')) socket.send(JSON.stringify({event: 'deal-again'}));">Deal
+                        Again</button>
                 </div>
                 <div id="my-hand">
 
@@ -105,7 +109,8 @@
                 </table>
             </div>
             <div id="text-row">
-                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..." maxlength="1024"></textarea>
+                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..."
+                    maxlength="1024"></textarea>
                 <button id="send-btn">Send</button>
             </div>
         </article>
