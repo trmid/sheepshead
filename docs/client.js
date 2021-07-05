@@ -471,64 +471,47 @@ function start_round(cards) {
         });
         round_options.append(first_trick);
     }
-    var trump_solo = document.createElement("button");
-    trump_solo.innerHTML = "Trump Solo";
-    trump_solo.addEventListener("click", function () {
-        var _a;
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'D',
-            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
-        }));
+    var solo = document.createElement("button");
+    solo.innerHTML = "Solo";
+    solo.addEventListener("click", function () {
+        var selector = suit_selector(function (suit) {
+            socket.send(JSON.stringify({
+                event: "ready",
+                call: "solo",
+                suit: suit,
+                du: false
+            }));
+        }, {
+            title: "Solo: "
+        });
+        var bb = solo.getBoundingClientRect();
+        document.body.append(selector);
+        selector.style.position = "fixed";
+        selector.style.top = bb.top - (15 + selector.getBoundingClientRect().height) + "px";
+        selector.style.left = bb.left + "px";
     });
-    round_options.append(trump_solo);
-    var heart_solo = document.createElement("button");
-    heart_solo.innerHTML = "Heart Solo";
-    heart_solo.addEventListener("click", function () {
-        var _a;
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'H',
-            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
-        }));
+    round_options.append(solo);
+    var solo_du = document.createElement("button");
+    solo_du.innerHTML = "Solo Du";
+    solo_du.addEventListener("click", function () {
+        var selector = suit_selector(function (suit) {
+            socket.send(JSON.stringify({
+                event: "ready",
+                call: "solo",
+                suit: suit,
+                du: true
+            }));
+        }, {
+            title: "Solo Du: "
+        });
+        var bb = solo_du.getBoundingClientRect();
+        document.body.append(selector);
+        selector.style.position = "fixed";
+        selector.style.top = bb.top - (15 + selector.getBoundingClientRect().height) + "px";
+        selector.style.left = bb.left + "px";
     });
-    round_options.append(heart_solo);
-    var spade_solo = document.createElement("button");
-    spade_solo.innerHTML = "Spade Solo";
-    spade_solo.addEventListener("click", function () {
-        var _a;
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'S',
-            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
-        }));
-    });
-    round_options.append(spade_solo);
-    var club_solo = document.createElement("button");
-    club_solo.innerHTML = "Club Solo";
-    club_solo.addEventListener("click", function () {
-        var _a;
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'C',
-            deux: (_a = document.getElementById("solo-deux")) === null || _a === void 0 ? void 0 : _a.checked
-        }));
-    });
-    round_options.append(club_solo);
+    round_options.append(solo_du);
     if (queens) {
-        var solo_deux_container = document.createElement("span");
-        solo_deux_container.id = 'solo-deux-container';
-        var solo_deux = document.createElement("input");
-        solo_deux.type = 'checkbox';
-        solo_deux.checked = false;
-        solo_deux.id = "solo-deux";
-        solo_deux_container.innerHTML = "Solo Du ";
-        solo_deux_container.append(solo_deux);
-        round_options.append(solo_deux_container);
         var gets_along = document.createElement("button");
         gets_along.innerHTML = "... Gets Along";
         gets_along.addEventListener("click", function () {
@@ -561,4 +544,46 @@ function start_round(cards) {
         round_options.append(get_along_card);
         round_options.append(gets_along);
     }
+}
+function suit_selector(on_select, options) {
+    if (options === void 0) { options = {}; }
+    var vals = [undefined, 'D', 'H', 'S', 'C'];
+    var container = document.createElement("div");
+    container.classList.add("suit-selector");
+    container.addEventListener("click", function (e) {
+        e.stopPropagation();
+    });
+    var remove = function () { container.remove(); };
+    if (options.title) {
+        var title = document.createElement("span");
+        title.style.marginLeft = "0.5em";
+        title.innerHTML = options.title;
+        container.append(title);
+    }
+    var _loop_2 = function (suit) {
+        var btn = document.createElement("button");
+        btn.innerHTML = suit ? suit_img(suit, true).outerHTML : "Cancel";
+        btn.addEventListener("click", function () {
+            if (suit) {
+                on_select(suit);
+            }
+            else if (options.on_cancel) {
+                options.on_cancel();
+            }
+            remove();
+        });
+        container.append(btn);
+    };
+    for (var _i = 0, vals_1 = vals; _i < vals_1.length; _i++) {
+        var suit = vals_1[_i];
+        _loop_2(suit);
+    }
+    setTimeout(function () {
+        document.addEventListener("click", function () {
+            remove();
+        }, {
+            once: true
+        });
+    }, 0);
+    return container;
 }

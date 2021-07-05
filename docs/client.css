@@ -166,6 +166,19 @@ main{
     box-shadow: 2px 2px 7px black;
 }
 
+/* SUIT SELECTOR */
+
+.suit-selector{
+    background-color: white;
+    border: 1px solid var(--dark);
+    border-radius: 0.25em;
+    padding: 0.25em;
+}
+
+.suit-selector .suit-img.suit-sm{
+    height: 1em;
+}
+
 /* TABLE FORM */
 
 #table-form{

@@ -270,7 +270,7 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
         case 'ready': {
             try {
                 if (player) {
-                    player.table.round?.call(player, data.call, data.deux, data.suit, data.val);
+                    player.table.round?.call(player, data.call, data.du, data.suit, data.val);
                 }
             } catch (err) {
                 console.error(err);
@@ -298,7 +298,7 @@ class Round {
     team1 = new Array<Player>();
     team2 = new Array<Player>();
     solo?: string // suit
-    solo_deux?: boolean
+    solo_du?: boolean
     solo_player?: Player
     queens_player?: Player
     first_trick = false;
@@ -491,7 +491,7 @@ class Round {
             }
 
             // Calculate payment
-            if (this.solo_deux) {
+            if (this.solo_du) {
                 payment = 24 * multiplier;
             } else if (this.solo) {
                 payment = 4 * multiplier;
@@ -501,8 +501,8 @@ class Round {
                 if (!losers.trick) payment += multiplier * 2; // no trick
             }
 
-            // Add payment for queens if not solo deux
-            if (!this.solo_deux) {
+            // Add payment for queens if not solo du
+            if (!this.solo_du) {
                 const team = winners.black_queens ? winners : (losers.black_queens ? losers : undefined);
                 if (team) {
                     if (team.dealt.get('QH')) {
@@ -516,7 +516,7 @@ class Round {
             }
 
             // Universal double if lose with black Q's
-            if (losers.black_queens && !this.solo_deux) {
+            if (losers.black_queens && !this.solo_du) {
                 payment *= 2;
             }
 
@@ -600,7 +600,7 @@ class Round {
     async call(
         player: Player,
         call: 'ready' | 'solo' | 'first-trick' | 'card',
-        solo_deux?: boolean,
+        solo_du?: boolean,
         suit?: 'D' | 'H' | 'S' | 'C',
         val?: '7' | '8' | '9' | 'T' | 'K' | 'A' | 'J' | 'Q'
     ) {
@@ -637,9 +637,9 @@ class Round {
                 this.solo = suit;
                 this.solo_player = player;
                 if (queens) {
-                    this.solo_deux = !!solo_deux;
+                    this.solo_du = !!solo_du;
                 }
-                this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_deux ? ' Du' : ''}!`;
+                this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_du ? ' Du' : ''}!`;
             }
         } else if (val === undefined) {
             bad_call = true;

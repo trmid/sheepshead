@@ -246,7 +246,7 @@ function handle_msg(socket, msg, player) {
             case 'ready': {
                 try {
                     if (player) {
-                        (_a = player.table.round) === null || _a === void 0 ? void 0 : _a.call(player, data.call, data.deux, data.suit, data.val);
+                        (_a = player.table.round) === null || _a === void 0 ? void 0 : _a.call(player, data.call, data.du, data.suit, data.val);
                     }
                 }
                 catch (err) {
@@ -437,7 +437,7 @@ class Round {
                     winners = teams[1];
                     losers = teams[0];
                 }
-                if (this.solo_deux) {
+                if (this.solo_du) {
                     payment = 24 * multiplier;
                 }
                 else if (this.solo) {
@@ -450,7 +450,7 @@ class Round {
                     if (!losers.trick)
                         payment += multiplier * 2;
                 }
-                if (!this.solo_deux) {
+                if (!this.solo_du) {
                     const team = winners.black_queens ? winners : (losers.black_queens ? losers : undefined);
                     if (team) {
                         if (team.dealt.get('QH')) {
@@ -463,7 +463,7 @@ class Round {
                         }
                     }
                 }
-                if (losers.black_queens && !this.solo_deux) {
+                if (losers.black_queens && !this.solo_du) {
                     payment *= 2;
                 }
                 if (this.solo && this.solo_player) {
@@ -533,7 +533,7 @@ class Round {
             return res;
         });
     }
-    call(player, call, solo_deux, suit, val) {
+    call(player, call, solo_du, suit, val) {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.player_ready.get(player)) {
                 player.send({
@@ -565,9 +565,9 @@ class Round {
                     this.solo = suit;
                     this.solo_player = player;
                     if (queens) {
-                        this.solo_deux = !!solo_deux;
+                        this.solo_du = !!solo_du;
                     }
-                    this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_deux ? ' Du' : ''}!`;
+                    this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_du ? ' Du' : ''}!`;
                 }
             }
             else if (val === undefined) {

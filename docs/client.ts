@@ -553,65 +553,113 @@ function start_round(cards: string[]) {
         round_options.append(first_trick);
     }
 
-    const trump_solo = document.createElement("button");
-    trump_solo.innerHTML = "Trump Solo";
-    trump_solo.addEventListener("click", () => {
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'D',
-            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
-        }));
+    const solo = document.createElement("button");
+    solo.innerHTML = "Solo";
+    solo.addEventListener("click", () => {
+        const selector = suit_selector(
+            suit => {
+                socket.send(JSON.stringify({
+                    event: "ready",
+                    call: "solo",
+                    suit: suit,
+                    du: false
+                }));
+            },
+            {
+                title: "Solo: "
+            }
+        );
+        const bb = solo.getBoundingClientRect();
+        document.body.append(selector);
+        selector.style.position = "fixed";
+        selector.style.top = `${bb.top - (15 + selector.getBoundingClientRect().height)}px`;
+        selector.style.left = `${bb.left}px`;
     });
-    round_options.append(trump_solo);
+    round_options.append(solo);
 
-    const heart_solo = document.createElement("button");
-    heart_solo.innerHTML = "Heart Solo";
-    heart_solo.addEventListener("click", () => {
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'H',
-            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
-        }));
+    const solo_du = document.createElement("button");
+    solo_du.innerHTML = "Solo Du";
+    solo_du.addEventListener("click", () => {
+        const selector = suit_selector(
+            suit => {
+                socket.send(JSON.stringify({
+                    event: "ready",
+                    call: "solo",
+                    suit: suit,
+                    du: true
+                }));
+            },
+            {
+                title: "Solo Du: "
+            }
+        );
+        const bb = solo_du.getBoundingClientRect();
+        document.body.append(selector);
+        selector.style.position = "fixed";
+        selector.style.top = `${bb.top - (15 + selector.getBoundingClientRect().height)}px`;
+        selector.style.left = `${bb.left}px`;
     });
-    round_options.append(heart_solo);
+    round_options.append(solo_du);
 
-    const spade_solo = document.createElement("button");
-    spade_solo.innerHTML = "Spade Solo";
-    spade_solo.addEventListener("click", () => {
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'S',
-            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
-        }));
-    });
-    round_options.append(spade_solo);
+    // const trump_solo = document.createElement("button");
+    // trump_solo.innerHTML = "Trump Solo";
+    // trump_solo.addEventListener("click", () => {
+    //     socket.send(JSON.stringify({
+    //         event: 'ready',
+    //         call: 'solo',
+    //         suit: 'D',
+    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
+    //     }));
+    // });
+    // round_options.append(trump_solo);
 
-    const club_solo = document.createElement("button");
-    club_solo.innerHTML = "Club Solo";
-    club_solo.addEventListener("click", () => {
-        socket.send(JSON.stringify({
-            event: 'ready',
-            call: 'solo',
-            suit: 'C',
-            deux: (<HTMLInputElement>document.getElementById("solo-deux"))?.checked
-        }));
-    });
-    round_options.append(club_solo);
+    // const heart_solo = document.createElement("button");
+    // heart_solo.innerHTML = "Heart Solo";
+    // heart_solo.addEventListener("click", () => {
+    //     socket.send(JSON.stringify({
+    //         event: 'ready',
+    //         call: 'solo',
+    //         suit: 'H',
+    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
+    //     }));
+    // });
+    // round_options.append(heart_solo);
+
+    // const spade_solo = document.createElement("button");
+    // spade_solo.innerHTML = "Spade Solo";
+    // spade_solo.addEventListener("click", () => {
+    //     socket.send(JSON.stringify({
+    //         event: 'ready',
+    //         call: 'solo',
+    //         suit: 'S',
+    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
+    //     }));
+    // });
+    // round_options.append(spade_solo);
+
+    // const club_solo = document.createElement("button");
+    // club_solo.innerHTML = "Club Solo";
+    // club_solo.addEventListener("click", () => {
+    //     socket.send(JSON.stringify({
+    //         event: 'ready',
+    //         call: 'solo',
+    //         suit: 'C',
+    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
+    //     }));
+    // });
+    // round_options.append(club_solo);
 
     if (queens) {
 
-        const solo_deux_container = document.createElement("span");
-        solo_deux_container.id = 'solo-deux-container';
-        const solo_deux = document.createElement("input");
-        solo_deux.type = 'checkbox';
-        solo_deux.checked = false;
-        solo_deux.id = "solo-deux";
-        solo_deux_container.innerHTML = "Solo Du ";
-        solo_deux_container.append(solo_deux);
-        round_options.append(solo_deux_container);
+        // const solo_du_container = document.createElement("span");
+        // solo_du_container.id = 'solo-du-container';
+        // const solo_du = document.createElement("input");
+        // solo_du.type = 'checkbox';
+        // solo_du.checked = false;
+        // solo_du.id = "solo-du";
+        // solo_du_container.innerHTML = "Solo Du ";
+        // solo_du_container.append(solo_du);
+        // round_options.append(solo_du_container);
 
         const gets_along = document.createElement("button");
         gets_along.innerHTML = "... Gets Along";
@@ -648,4 +696,56 @@ function start_round(cards: string[]) {
         round_options.append(gets_along);
     }
 
+}
+
+function suit_selector(on_select: (suit: 'D' | 'H' | 'S' | 'C') => void, options: {
+    on_cancel?: () => void,
+    title?: string
+} = {}) {
+    const vals: ('D' | 'H' | 'S' | 'C')[] = [undefined, 'D', 'H', 'S', 'C'];
+
+    // Create Container
+    const container = document.createElement("div");
+    container.classList.add("suit-selector");
+    container.addEventListener("click", e => {
+        e.stopPropagation();
+    });
+
+    // Create Remove function
+    const remove = () => { container.remove() };
+
+    // Append title
+    if (options.title) {
+        const title = document.createElement("span");
+        title.style.marginLeft = "0.5em";
+        title.innerHTML = options.title;
+        container.append(title);
+    }
+
+    // Add Suits
+    for (const suit of vals) {
+        const btn = document.createElement("button");
+        btn.innerHTML = suit ? suit_img(suit, true).outerHTML : "Cancel";
+        btn.addEventListener("click", () => {
+            if (suit) {
+                on_select(suit);
+            } else if (options.on_cancel) {
+                options.on_cancel();
+            }
+            remove();
+        });
+        container.append(btn);
+    }
+
+    // Create auto-close listener
+    setTimeout(() => {
+        document.addEventListener("click", () => {
+            remove();
+        }, {
+            once: true
+        });
+    }, 0);
+
+    // Return container
+    return container;
 }
