@@ -77,7 +77,7 @@ window.addEventListener('load', () => {
                 setTimeout(() => {
                     log("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", "announcement");
                     setTimeout(() => {
-                        log("However, if a table has not used within the last 2 weeks it will be deleted.");
+                        log("However, if a table has not used within the last 2 weeks it will be deleted.", "announcement");
                         setTimeout(() => {
                             log("Have fun :)", "announcement");
                         }, 100);
