@@ -1,3 +1,40 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+var _this = this;
 var socket;
 var my_name;
 var clear_table = false;
@@ -38,37 +75,67 @@ window.addEventListener('load', function () {
             send_msg();
         }
     });
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
     socket.onclose = function () {
         var msg = "You have been disconnected from the server... Please reload the page and try again.";
         log(msg, "error");
     };
-    socket.onopen = function () {
-        socket.send(JSON.stringify({
-            event: "connected"
-        }));
-        log("Connected to server!", "server");
-        document.getElementById("table-form").removeAttribute("style");
-        log("Welcome to Sheepshead Online!", "announcement");
-        setTimeout(function () {
-            log("Play with others by creating a table and sharing the table name and password with other players.", "announcement");
-            setTimeout(function () {
-                log("Already have a table? Enter the table name and password in the form to join the table.", "announcement");
-                setTimeout(function () {
-                    log("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", "announcement");
-                    setTimeout(function () {
-                        log("However, if a table has not used within the last 2 weeks it will be deleted.", "announcement");
-                        setTimeout(function () {
-                            log("Have fun :)", "announcement");
-                        }, 100);
-                    }, 100);
-                }, 100);
-            }, 100);
-        }, 100);
-        setInterval(function () {
-            socket.send(JSON.stringify({ 'event': 'ping' }));
-        }, 1000 * 30);
-    };
+    socket.onopen = function () { return __awaiter(_this, void 0, void 0, function () {
+        var announce, delay;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    announce = function (msg, delay, className) {
+                        if (delay === void 0) { delay = 0; }
+                        if (className === void 0) { className = "announcement"; }
+                        return new Promise(function (resolve, reject) {
+                            setTimeout(function () {
+                                try {
+                                    resolve(log(msg, className));
+                                }
+                                catch (err) {
+                                    reject(err);
+                                }
+                            }, delay);
+                        });
+                    };
+                    delay = 200;
+                    socket.send(JSON.stringify({
+                        event: "connected"
+                    }));
+                    log("Connected to server!", "server");
+                    document.getElementById("table-form").removeAttribute("style");
+                    return [4, announce("Welcome to Sheepshead Online!", delay)];
+                case 1:
+                    _a.sent();
+                    return [4, announce("Play with others by creating a table and sharing the table name and password with other players.", delay)];
+                case 2:
+                    _a.sent();
+                    return [4, announce("Already have a table? Enter the table name and password in the form to join the table.", delay)];
+                case 3:
+                    _a.sent();
+                    return [4, announce("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", delay)];
+                case 4:
+                    _a.sent();
+                    return [4, announce("However, if a table has not used within the last 2 weeks it will be deleted.", delay)];
+                case 5:
+                    _a.sent();
+                    return [4, announce("Have fun :)", delay)];
+                case 6:
+                    _a.sent();
+                    return [4, announce("Have any feedback? Email me at <a href='mailto: sheapshead@pernetsystems.com'>sheepshead@pernetsystems.com</a>.", delay, "none")];
+                case 7:
+                    _a.sent();
+                    return [4, announce("Found a bug? Report it <a href='https://github.com/midpoint68/sheepshead/issues/new'>here</a>.", delay, "none")];
+                case 8:
+                    _a.sent();
+                    setInterval(function () {
+                        socket.send(JSON.stringify({ 'event': 'ping' }));
+                    }, 1000 * 30);
+                    return [2];
+            }
+        });
+    }); };
     socket.onmessage = function (me) {
         try {
             var data = JSON.parse(me.data);
@@ -177,12 +244,14 @@ window.addEventListener('load', function () {
                     break;
                 case 'ready': {
                     log(data.player_name + " is ready!", 'game');
-                    var ready = document.createElement("div");
-                    ready.innerHTML = "Ready";
-                    ready.classList.add("player-ready");
                     var player_elem_1 = document.getElementById("player-" + data.player_name);
-                    player_elem_1.append(ready);
-                    player_elem_1.classList.add("ready");
+                    if (!player_elem_1.classList.contains("ready")) {
+                        var ready = document.createElement("div");
+                        ready.innerHTML = "Ready";
+                        ready.classList.add("player-ready");
+                        player_elem_1.append(ready);
+                        player_elem_1.classList.add("ready");
+                    }
                     break;
                 }
                 case 'round-start':
@@ -450,6 +519,10 @@ function suit_img(suit, small) {
     return img;
 }
 function start_round(cards) {
+    var ready_choice = function (elem) {
+        document.querySelectorAll(".ready-choice").forEach(function (elem) { return elem.classList.remove("ready-choice"); });
+        elem.classList.add("ready-choice");
+    };
     var queens = cards.includes('QC') && cards.includes('QS');
     var round_options = document.getElementById("round-options");
     round_options.innerHTML = "";
@@ -461,18 +534,20 @@ function start_round(cards) {
             event: 'ready',
             call: 'ready'
         }));
+        ready_choice(ready);
     });
     round_options.append(ready);
     if (queens) {
-        var first_trick = document.createElement("button");
-        first_trick.innerHTML = "First Trick";
-        first_trick.addEventListener("click", function () {
+        var first_trick_1 = document.createElement("button");
+        first_trick_1.innerHTML = "First Trick";
+        first_trick_1.addEventListener("click", function () {
             socket.send(JSON.stringify({
                 event: 'ready',
                 call: 'first-trick'
             }));
+            ready_choice(first_trick_1);
         });
-        round_options.append(first_trick);
+        round_options.append(first_trick_1);
     }
     var solo = document.createElement("button");
     solo.innerHTML = "Solo";
@@ -484,6 +559,7 @@ function start_round(cards) {
                 suit: suit,
                 du: false
             }));
+            ready_choice(solo);
         }, {
             title: "Solo: "
         });
@@ -504,6 +580,7 @@ function start_round(cards) {
                 suit: suit,
                 du: true
             }));
+            ready_choice(solo_du);
         }, {
             title: "Solo Du: "
         });
@@ -515,9 +592,9 @@ function start_round(cards) {
     });
     round_options.append(solo_du);
     if (queens) {
-        var gets_along = document.createElement("button");
-        gets_along.innerHTML = "... Gets Along";
-        gets_along.addEventListener("click", function () {
+        var gets_along_1 = document.createElement("button");
+        gets_along_1.innerHTML = "... Gets Along";
+        gets_along_1.addEventListener("click", function () {
             var card = document.getElementById('get_along_card').value;
             socket.send(JSON.stringify({
                 event: 'ready',
@@ -525,8 +602,11 @@ function start_round(cards) {
                 suit: card.charAt(1),
                 val: card.charAt(0)
             }));
+            ready_choice(gets_along_1);
         });
+        gets_along_1.style.marginLeft = "0";
         var get_along_card = document.createElement("select");
+        get_along_card.style.marginRight = "0";
         get_along_card.id = "get_along_card";
         get_along_card.setAttribute("placeholder", "Select a Card...");
         var val_keys = Object.keys(vals);
@@ -545,7 +625,7 @@ function start_round(cards) {
             }
         }
         round_options.append(get_along_card);
-        round_options.append(gets_along);
+        round_options.append(gets_along_1);
     }
 }
 function suit_selector(on_select, options) {

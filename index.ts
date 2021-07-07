@@ -323,7 +323,12 @@ class Round {
     turn = 0;
     active: number
     table: Table
-    player_ready = new Map<Player, boolean>();
+    player_ready = new Map<Player, {
+        call: 'ready' | 'solo' | 'first-trick' | 'card',
+        solo_du?: boolean,
+        suit?: 'D' | 'H' | 'S' | 'C',
+        val?: '7' | '8' | '9' | 'T' | 'K' | 'A' | 'J' | 'Q'
+    }>();
     strategy_call?: string
 
     constructor(table: Table) {
@@ -622,116 +627,111 @@ class Round {
         val?: '7' | '8' | '9' | 'T' | 'K' | 'A' | 'J' | 'Q'
     ) {
 
-        if (this.player_ready.get(player)) {
-            player.send({
-                event: 'error',
-                msg: 'You have already readied up.'
-            });
-            return;
-        }
+        this.player_ready.set(player, { call: call, solo_du: solo_du, suit: suit, val: val }); // Set the player's choice
+        this.table.send({
+            event: 'ready',
+            player_name: player.name
+        });
 
-        // Check if player has both queens
-        const queens = player.hand.get('QC') && player.hand.get('QS');
-        if (queens) {
-            this.queens_player = player;
-        }
+        if (this.player_ready.size >= 4) {
 
-        // Keep track of bad calls
-        let bad_call = false;
-        if (call === 'ready') {
-            // nothing
-        } else if (call === 'first-trick') {
-            if (queens && !this.solo) {
-                this.first_trick = true;
-                this.strategy_call = `${player.name} has called First Trick!`;
-            }
-        } else if (suit === undefined) {
-            bad_call = true;
-        } else if (call === 'solo') {
-            if (!this.solo || this.solo !== 'D' && suit === 'D') {
-                this.first_trick = false;
-                this.chosen_card = undefined;
-                this.solo = suit;
-                this.solo_player = player;
+            for (const [player, { call, solo_du, suit, val }] of this.player_ready.entries()) {
+                // Check if player has both queens
+                const queens = player.hand.get('QC') && player.hand.get('QS');
                 if (queens) {
-                    this.solo_du = !!solo_du;
+                    this.queens_player = player;
                 }
-                this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_du ? ' Du' : ''}!`;
-            }
-        } else if (val === undefined) {
-            bad_call = true;
-        } else if (call === 'card') {
-            if (queens && !this.solo) {
-                this.first_trick = false;
-                this.chosen_card = `${val}${suit}`;
-                this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
-            }
-        } else {
-            bad_call = true;
-        }
 
-        if (bad_call) {
-            player.send({
-                event: 'error',
-                msg: 'Incorrect ready call...'
-            });
-        } else {
-            this.player_ready.set(player, true);
-            this.table.send({
-                event: 'ready',
-                player_name: player.name
-            });
-            if (this.player_ready.size == 4) {
-                // Setup teams
-                if (this.solo && this.solo_player) {
-                    this.team1.push(this.solo_player);
-                    this.team2 = this.table.players.filter(p => p != this.solo_player);
-                } else if (this.chosen_card && this.queens_player) {
-                    const card = this.chosen_card;
-                    this.table.players.forEach(player => {
-                        if (player.hand.get(card) || player == this.queens_player) {
-                            this.team1.push(player);
-                        } else {
-                            this.team2.push(player);
-                        }
-                    });
-                } else if (this.first_trick && this.queens_player) {
-                    this.team1.push(this.queens_player);
-                    // Other team is decided when trick is won
-                } else if (this.queens_player) {
-                    // Quiet solo
-                    this.solo = 'D';
-                    this.solo_player = this.queens_player;
-                    this.team1.push(this.queens_player);
-                    this.team2 = this.table.players.filter(p => p != this.queens_player);
+                // Keep track of bad calls
+                let bad_call = false;
+                if (call === 'ready') {
+                    // nothing
+                } else if (call === 'first-trick') {
+                    if (queens && !this.solo) {
+                        this.first_trick = true;
+                        this.strategy_call = `${player.name} has called First Trick!`;
+                    }
+                } else if (suit === undefined) {
+                    bad_call = true;
+                } else if (call === 'solo') {
+                    if (!this.solo || (solo_du && !this.solo_du) || (this.solo !== 'D' && suit === 'D' && (!!this.solo_du == !!solo_du))) {
+                        this.first_trick = false;
+                        this.chosen_card = undefined;
+                        this.solo = suit;
+                        this.solo_player = player;
+                        this.solo_du = !!solo_du;
+                        this.strategy_call = `${player.name} has called a ${Table.suit_to_string(suit)} Solo${this.solo_du ? ' Du' : ''}!`;
+                    }
+                } else if (val === undefined) {
+                    bad_call = true;
+                } else if (call === 'card') {
+                    if (queens && !this.solo) {
+                        this.first_trick = false;
+                        this.chosen_card = `${val}${suit}`;
+                        this.strategy_call = `${player.name} has called that the ${Table.val_to_string(val)} of ${Table.suit_to_string(suit)}s gets along.`;
+                    }
                 } else {
-                    // Normal game
-                    this.table.players.forEach(player => {
-                        if (player.original_hand.get('QS') || player.original_hand.get('QC')) {
-                            this.team1.push(player);
-                        } else {
-                            this.team2.push(player);
-                        }
+                    bad_call = true;
+                }
+
+                if (bad_call) {
+                    player.send({
+                        event: "error",
+                        msg: "Bad ready call..."
                     });
                 }
 
-                // Start round
-                const messages = new Array<Promise<boolean>>();
-                this.table.players.forEach(player => {
-                    messages.push(player.send({
-                        event: 'round-start',
-                        player_turn: this.active_player().name,
-                        strategy_call: this.strategy_call,
-                        trump: this.trump(),
-                        my_hand: Array.from(player.hand.keys()),
-                    }));
-                });
-
-                const res = await Promise.all(messages);
-
-                return res;
-
             }
+
+            // Setup teams
+            if (this.solo && this.solo_player) {
+                this.team1.push(this.solo_player);
+                this.team2 = this.table.players.filter(p => p != this.solo_player);
+            } else if (this.chosen_card && this.queens_player) {
+                const card = this.chosen_card;
+                this.table.players.forEach(player => {
+                    if (player.hand.get(card) || player == this.queens_player) {
+                        this.team1.push(player);
+                    } else {
+                        this.team2.push(player);
+                    }
+                });
+            } else if (this.first_trick && this.queens_player) {
+                this.team1.push(this.queens_player);
+                // Other team is decided when trick is won
+            } else if (this.queens_player) {
+                // Quiet solo
+                this.solo = 'D';
+                this.solo_player = this.queens_player;
+                this.team1.push(this.queens_player);
+                this.team2 = this.table.players.filter(p => p != this.queens_player);
+            } else {
+                // Normal game
+                this.table.players.forEach(player => {
+                    if (player.original_hand.get('QS') || player.original_hand.get('QC')) {
+                        this.team1.push(player);
+                    } else {
+                        this.team2.push(player);
+                    }
+                });
+            }
+
+            // Start round
+            const messages = new Array<Promise<boolean>>();
+            this.table.players.forEach(player => {
+                messages.push(player.send({
+                    event: 'round-start',
+                    player_turn: this.active_player().name,
+                    strategy_call: this.strategy_call,
+                    trump: this.trump(),
+                    my_hand: Array.from(player.hand.keys()),
+                }));
+            });
+
+            const res = await Promise.all(messages);
+
+            return res;
+
         }
     }
 

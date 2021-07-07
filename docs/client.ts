@@ -55,36 +55,43 @@ window.addEventListener('load', () => {
      * 
      * ws://localhost:3000
      */
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
 
     socket.onclose = () => {
         const msg = "You have been disconnected from the server... Please reload the page and try again.";
         log(msg, "error");
     };
 
-    socket.onopen = () => {
+    socket.onopen = async () => {
+
+        const announce = (msg: string, delay = 0, className = "announcement") => {
+            return new Promise<void>((resolve, reject) => {
+                setTimeout(() => {
+                    try {
+                        resolve(log(msg, className));
+                    } catch (err) {
+                        reject(err);
+                    }
+                }, delay);
+            });
+        };
+        const delay = 200;
+
         socket.send(JSON.stringify({
             event: "connected"
         }));
         log("Connected to server!", "server");
         document.getElementById("table-form").removeAttribute("style"); // show table form
 
-        log("Welcome to Sheepshead Online!", "announcement");
-        setTimeout(() => {
-            log("Play with others by creating a table and sharing the table name and password with other players.", "announcement");
-            setTimeout(() => {
-                log("Already have a table? Enter the table name and password in the form to join the table.", "announcement");
-                setTimeout(() => {
-                    log("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", "announcement");
-                    setTimeout(() => {
-                        log("However, if a table has not used within the last 2 weeks it will be deleted.", "announcement");
-                        setTimeout(() => {
-                            log("Have fun :)", "announcement");
-                        }, 100);
-                    }, 100);
-                }, 100);
-            }, 100);
-        }, 100);
+        await announce("Welcome to Sheepshead Online!", delay);
+        await announce("Play with others by creating a table and sharing the table name and password with other players.", delay);
+        await announce("Already have a table? Enter the table name and password in the form to join the table.", delay);
+        await announce("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", delay);
+        await announce("However, if a table has not used within the last 2 weeks it will be deleted.", delay);
+        await announce("Have fun :)", delay);
+
+        await announce("Have any feedback? Email me at <a href='mailto: sheapshead@pernetsystems.com'>sheepshead@pernetsystems.com</a>.", delay, "none");
+        await announce("Found a bug? Report it <a href='https://github.com/midpoint68/sheepshead/issues/new'>here</a>.", delay, "none");
 
         setInterval(() => {
             socket.send(JSON.stringify({ 'event': 'ping' }));
@@ -222,13 +229,14 @@ window.addEventListener('load', () => {
                     break;
                 case 'ready': {
                     log(`${data.player_name} is ready!`, 'game');
-
-                    const ready = document.createElement("div");
-                    ready.innerHTML = "Ready";
-                    ready.classList.add("player-ready");
-                    const player_elem = document.getElementById(`player-${data.player_name}`)
-                    player_elem.append(ready);
-                    player_elem.classList.add("ready");
+                    const player_elem = document.getElementById(`player-${data.player_name}`);
+                    if (!player_elem.classList.contains("ready")) {
+                        const ready = document.createElement("div");
+                        ready.innerHTML = "Ready";
+                        ready.classList.add("player-ready");
+                        player_elem.append(ready);
+                        player_elem.classList.add("ready");
+                    }
                     break;
                 }
                 case 'round-start':
@@ -528,6 +536,11 @@ function suit_img(suit: string, small = false) {
 // Ready up
 function start_round(cards: string[]) {
 
+    const ready_choice = (elem: Element) => {
+        document.querySelectorAll(".ready-choice").forEach(elem => elem.classList.remove("ready-choice"));
+        elem.classList.add("ready-choice");
+    }
+
     const queens = cards.includes('QC') && cards.includes('QS');
 
     const round_options = document.getElementById("round-options");
@@ -541,6 +554,7 @@ function start_round(cards: string[]) {
             event: 'ready',
             call: 'ready'
         }));
+        ready_choice(ready);
     });
     round_options.append(ready);
 
@@ -552,6 +566,7 @@ function start_round(cards: string[]) {
                 event: 'ready',
                 call: 'first-trick'
             }));
+            ready_choice(first_trick);
         });
         round_options.append(first_trick);
     }
@@ -567,6 +582,7 @@ function start_round(cards: string[]) {
                     suit: suit,
                     du: false
                 }));
+                ready_choice(solo);
             },
             {
                 title: "Solo: "
@@ -591,6 +607,7 @@ function start_round(cards: string[]) {
                     suit: suit,
                     du: true
                 }));
+                ready_choice(solo_du);
             },
             {
                 title: "Solo Du: "
@@ -604,65 +621,7 @@ function start_round(cards: string[]) {
     });
     round_options.append(solo_du);
 
-    // const trump_solo = document.createElement("button");
-    // trump_solo.innerHTML = "Trump Solo";
-    // trump_solo.addEventListener("click", () => {
-    //     socket.send(JSON.stringify({
-    //         event: 'ready',
-    //         call: 'solo',
-    //         suit: 'D',
-    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
-    //     }));
-    // });
-    // round_options.append(trump_solo);
-
-    // const heart_solo = document.createElement("button");
-    // heart_solo.innerHTML = "Heart Solo";
-    // heart_solo.addEventListener("click", () => {
-    //     socket.send(JSON.stringify({
-    //         event: 'ready',
-    //         call: 'solo',
-    //         suit: 'H',
-    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
-    //     }));
-    // });
-    // round_options.append(heart_solo);
-
-    // const spade_solo = document.createElement("button");
-    // spade_solo.innerHTML = "Spade Solo";
-    // spade_solo.addEventListener("click", () => {
-    //     socket.send(JSON.stringify({
-    //         event: 'ready',
-    //         call: 'solo',
-    //         suit: 'S',
-    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
-    //     }));
-    // });
-    // round_options.append(spade_solo);
-
-    // const club_solo = document.createElement("button");
-    // club_solo.innerHTML = "Club Solo";
-    // club_solo.addEventListener("click", () => {
-    //     socket.send(JSON.stringify({
-    //         event: 'ready',
-    //         call: 'solo',
-    //         suit: 'C',
-    //         du: (<HTMLInputElement>document.getElementById("solo-du"))?.checked
-    //     }));
-    // });
-    // round_options.append(club_solo);
-
     if (queens) {
-
-        // const solo_du_container = document.createElement("span");
-        // solo_du_container.id = 'solo-du-container';
-        // const solo_du = document.createElement("input");
-        // solo_du.type = 'checkbox';
-        // solo_du.checked = false;
-        // solo_du.id = "solo-du";
-        // solo_du_container.innerHTML = "Solo Du ";
-        // solo_du_container.append(solo_du);
-        // round_options.append(solo_du_container);
 
         const gets_along = document.createElement("button");
         gets_along.innerHTML = "... Gets Along";
@@ -673,10 +632,13 @@ function start_round(cards: string[]) {
                 call: 'card',
                 suit: card.charAt(1),
                 val: card.charAt(0)
-            }))
+            }));
+            ready_choice(gets_along);
         });
+        gets_along.style.marginLeft = "0";
 
         const get_along_card = document.createElement("select");
+        get_along_card.style.marginRight = "0";
         get_along_card.id = "get_along_card";
         get_along_card.setAttribute("placeholder", "Select a Card...");
         const val_keys = Object.keys(vals);
