@@ -57,7 +57,10 @@ window.addEventListener('load', function () {
                 setTimeout(function () {
                     log("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", "announcement");
                     setTimeout(function () {
-                        log("Have fun :)", "announcement");
+                        log("However, if a table has not used within the last 2 weeks it will be deleted.");
+                        setTimeout(function () {
+                            log("Have fun :)", "announcement");
+                        }, 100);
                     }, 100);
                 }, 100);
             }, 100);

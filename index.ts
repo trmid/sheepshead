@@ -7,6 +7,7 @@ import fetch from 'node-fetch';
 const app = express();
 const port = process.env.PORT || 3000;
 const mongo_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@sheepshead.oa0bn.mongodb.net/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`;
+const table_lifespan = 1000 * 60 * 60 * 24 * 14; // 2 weeks
 
 // Connect to database
 let db: mongo.Db;
@@ -104,11 +105,24 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
         }
         case 'create-table': {
             try {
+
+                const now = Date.now();
+
+                // Delete Old Tables
+                await db.collection("tables").deleteMany({
+                    last_used: {
+                        $lt: now - table_lifespan
+                    }
+                })
+
+                // Insert Table
                 const hashed = hash(data.table_password);
                 const res = await db.collection("tables").insertOne({
                     name: data.table_name,
                     hash: hashed,
-                    players: []
+                    players: [],
+                    created_at: now,
+                    last_used: now
                 });
                 if (res.result.ok) {
                     // Create the table
@@ -119,6 +133,7 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
                 } else {
                     throw new Error("Table could not be created...");
                 }
+
             } catch (err) {
                 let err_msg = 'There was an unknown error. Please try again...';
                 if (err instanceof mongo.MongoError) {
@@ -208,6 +223,8 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
                             }
 
                             if (joined && player) {
+                                // Update table last used time
+                                db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
                                 // Connect
                                 player.connect(socket);
                                 // Save to player map

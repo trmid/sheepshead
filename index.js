@@ -20,6 +20,7 @@ const node_fetch_1 = __importDefault(require("node-fetch"));
 const app = express_1.default();
 const port = process.env.PORT || 3000;
 const mongo_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@sheepshead.oa0bn.mongodb.net/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`;
+const table_lifespan = 1000 * 60 * 60 * 24 * 14;
 let db;
 mongodb_1.default.MongoClient.connect(mongo_url, (err, client) => __awaiter(void 0, void 0, void 0, function* () {
     if (err)
@@ -96,11 +97,19 @@ function handle_msg(socket, msg, player) {
             }
             case 'create-table': {
                 try {
+                    const now = Date.now();
+                    yield db.collection("tables").deleteMany({
+                        last_used: {
+                            $lt: now - table_lifespan
+                        }
+                    });
                     const hashed = hash(data.table_password);
                     const res = yield db.collection("tables").insertOne({
                         name: data.table_name,
                         hash: hashed,
-                        players: []
+                        players: [],
+                        created_at: now,
+                        last_used: now
                     });
                     if (res.result.ok) {
                         table_cache.set(data.table_name, new Table(data.table_name, hashed));
@@ -184,6 +193,7 @@ function handle_msg(socket, msg, player) {
                                     joined = table.add(player);
                                 }
                                 if (joined && player) {
+                                    db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
                                     player.connect(socket);
                                     player_map.set(socket, player);
                                     if (table.ready() && !table.round) {
