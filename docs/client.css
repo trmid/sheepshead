@@ -11,10 +11,11 @@
 
 /* BODY */
 
-html,body{
+html,body,#background{
     margin: 0;
     padding: 0;
     overflow: hidden;
+    background-color: white;
 
     position: fixed;
     top: 0;
@@ -24,11 +25,6 @@ html,body{
 }
 
 body{
-    background-image: url('img/pexels-brett-sayles-5489457.jpg');
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
     height: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
@@ -54,6 +50,7 @@ header{
     flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
+    z-index: 2;
 }
 
 header h2 {
@@ -136,10 +133,6 @@ main{
     box-shadow: 2px 2px 7px black;
 }
 
-#round-options .ready-choice{
-    box-shadow: 0 0 0.25em 1px green;
-}
-
 #solo-deux-container{
     padding: 0.5em;
     margin: 0.5em;
@@ -168,19 +161,6 @@ main{
     padding: 0.5em;
     border-radius: 0.25em;
     box-shadow: 2px 2px 7px black;
-}
-
-/* SUIT SELECTOR */
-
-.suit-selector{
-    background-color: white;
-    border: 1px solid var(--dark);
-    border-radius: 0.25em;
-    padding: 0.25em;
-}
-
-.suit-selector .suit-img.suit-sm{
-    height: 1em;
 }
 
 /* TABLE FORM */
@@ -333,6 +313,7 @@ input[type=checkbox]{
     justify-content: flex-start;
     align-items: stretch;
     border-top: 1px solid var(--dark);
+    background-color: var(--light);
 }
 
 #send-text{
