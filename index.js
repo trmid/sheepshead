@@ -89,7 +89,6 @@ function handle_msg(socket, msg, player) {
             return;
         players_active = true;
         const data = JSON.parse(msg);
-        console.log(data);
         switch (data.event) {
             case 'ping': {
                 socket.send(JSON.stringify({ 'event': 'ping' }));
@@ -886,6 +885,16 @@ class Player {
                     else if (card === this.table.round.chosen_card && this.hand.size > 1) {
                         yield this.send({ event: 'error', msg: "You cannot play that card unless it matches suit since it was chosen to get along with the queens." });
                         return;
+                    }
+                }
+                else {
+                    const chosen_card = this.table.round.chosen_card;
+                    if (chosen_card) {
+                        const chosen_card_suit = this.table.round.is_trump(chosen_card) ? 'T' : chosen_card.charAt(1);
+                        if (card_suit == chosen_card_suit && card !== chosen_card && Array.from(this.hand.keys()).includes(chosen_card)) {
+                            yield this.send({ event: 'error', msg: `You must play the ${Table.val_to_string(chosen_card.charAt(0))} of ${Table.suit_to_string(chosen_card.charAt(1))}s since it was chosen to get along with the queens.` });
+                            return;
+                        }
                     }
                 }
             }
