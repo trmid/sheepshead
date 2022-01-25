@@ -1,6 +1,6 @@
 {
   "name": "sheepshead",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "4-Player Online Sheepshead Card Game",
   "main": "index.js",
   "directories": {

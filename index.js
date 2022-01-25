@@ -882,10 +882,6 @@ class Player {
                     if (has_suit) {
                         illegal_card = true;
                     }
-                    else if (card === this.table.round.chosen_card && this.hand.size > 1) {
-                        yield this.send({ event: 'error', msg: "You cannot play that card unless it matches suit since it was chosen to get along with the queens." });
-                        return;
-                    }
                 }
                 else {
                     const chosen_card = this.table.round.chosen_card;
