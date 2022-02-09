@@ -97,7 +97,6 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
     if (typeof msg !== 'string') return;
     players_active = true;
     const data = JSON.parse(msg);
-    // console.log(data);
     switch (data.event) {
         case 'ping': {
             socket.send(JSON.stringify({ 'event': 'ping' }));
@@ -115,20 +114,26 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
                     }
                 })
 
+                // Create random table ID
+                let table_id = '';
+                while (table_id.length < 8) {
+                    table_id += Math.floor(Math.random() * 16).toString(16);
+                }
+                table_id += now.toString(16);
+
                 // Insert Table
-                const hashed = hash(data.table_password);
                 const res = await db.collection("tables").insertOne({
-                    name: data.table_name,
-                    hash: hashed,
+                    name: table_id,
                     players: [],
                     created_at: now,
                     last_used: now
                 });
                 if (res.result.ok) {
                     // Create the table
-                    table_cache.set(data.table_name, new Table(data.table_name, hashed));
+                    table_cache.set(table_id, new Table(table_id));
                     socket.send(JSON.stringify({
-                        event: 'table-created'
+                        event: 'table-created',
+                        table_id
                     }));
                 } else {
                     throw new Error("Table could not be created...");
@@ -136,23 +141,17 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
 
             } catch (err) {
                 let err_msg = 'There was an unknown error. Please try again...';
-                if (err instanceof mongo.MongoError) {
-                    if (err.message.includes("duplicate key")) {
-                        err_msg = "A table with that name already exists... Please enter a different name.";
-                    }
-                }
                 console.error(err);
                 socket.send(JSON.stringify({
                     event: 'error',
                     msg: err_msg
                 }));
-                break;
             }
+            break;
         }
         // No break
         case 'join-table': {
             try {
-
                 // Ensure the table exists
                 let table_exists = !!table_cache.get(data.table_name);
                 if (!table_exists) {
@@ -160,7 +159,7 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
                     if (await res.hasNext()) {
                         table_exists = true;
                         const table_data = await res.next();
-                        const table = new Table(table_data.name, table_data.hash);
+                        const table = new Table(table_data.name);
                         table_cache.set(data.table_name, table);
                         table_data.players.forEach((player_data: { name: string, balance: number }) => {
                             // Add existing players to table
@@ -181,73 +180,72 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
                     // Get the table from cache
                     const table = table_cache.get(data.table_name);
                     if (!table) throw new Error("There was an unknown error fetching the table from the cache.");
+                    if (!!table.socket_map.get(socket)) {
 
-                    // Check the password
-                    if (valid_pass(data.table_password, table.hash)) {
+                        // Player is already connected during this session
+                        socket.send(JSON.stringify({
+                            event: "error",
+                            msg: "You are already connected to the table."
+                        }));
 
-                        if (!!table.socket_map.get(socket)) {
+                    } else {
 
-                            // Player is already connected during this session
-                            socket.send(JSON.stringify({
-                                event: "error",
-                                msg: "You are already connected to the table."
-                            }));
+                        let player = undefined;
 
-                        } else {
-
-                            let player = undefined;
-
-                            // Check if the player is already in the table
-                            let joined = false;
-                            table.players.forEach(p => {
-                                if (p.name === data.player_name) {
-                                    // Player is a part of the table already
-                                    if (p.socket) {
-                                        // Player is already connected with that name
-                                        socket.send(JSON.stringify({
-                                            event: 'error',
-                                            msg: 'There is already a player connected with that name... Please try a different name.'
-                                        }));
-                                        joined = true;
-                                    } else {
-                                        player = p;
-                                        joined = true;
-                                    }
+                        // Check if the player is already in the table
+                        let joined = false;
+                        table.players.forEach(p => {
+                            if (p.name === data.player_name) {
+                                // Player is a part of the table already
+                                if (p.socket) {
+                                    // Player is already connected with that name
+                                    socket.send(JSON.stringify({
+                                        event: 'error',
+                                        msg: 'There is already a player connected with that name... Please try a different name.'
+                                    }));
+                                    joined = true;
+                                } else {
+                                    player = p;
+                                    joined = true;
                                 }
-                            })
+                            }
+                        })
 
-                            if (!joined) {
-                                // Join the table if it has room
+                        if (!joined) {
+                            // Join the table if it has room
+                            if (data.player_name.length > Player.max_name_length || data.player_name.length < Player.min_name_length) {
+                                socket.send(JSON.stringify({
+                                    event: 'error',
+                                    msg: 'Player name must be between 2 and 20 characters'
+                                }));
+                            } else {
                                 player = new Player(data.player_name, table);
                                 joined = table.add(player);
                             }
-
-                            if (joined && player) {
-                                // Update table last used time
-                                db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
-                                // Connect
-                                player.connect(socket);
-                                // Save to player map
-                                player_map.set(socket, player)
-                                // Check for game beginning
-                                if (table.ready() && !table.round) {
-                                    await table.start_round();
-                                }
-                            } else if (!joined) {
-                                // Table full
-                                socket.send(JSON.stringify({
-                                    event: 'error',
-                                    msg: 'The requested table is full. Could not join the table.'
-                                }));
-                            }
-
                         }
-                    } else {
-                        // Bad Authentication
-                        socket.send(JSON.stringify({
-                            event: 'error',
-                            msg: 'Incorrect table name or password. Please try again.'
-                        }));
+
+                        if (joined && player) {
+                            // Update table last used time
+                            db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
+                            // Connect
+                            player.connect(socket);
+                            // Save to player map
+                            player_map.set(socket, player);
+                            // Send joined confirmation
+                            socket.send(JSON.stringify({
+                                event: 'table-joined'
+                            }));
+                            // Check for game beginning
+                            if (table.ready() && !table.round) {
+                                await table.start_round();
+                            }
+                        } else if (!joined) {
+                            // Table full
+                            socket.send(JSON.stringify({
+                                event: 'error',
+                                msg: 'The requested table is full. Could not join the table.'
+                            }));
+                        }
                     }
                 }
             } catch (err) {
@@ -370,10 +368,14 @@ class Round {
         const deals = new Array<Promise<boolean>>();
         for (let i = 0; i < 4; i++) {
             const hand = cards.slice(i * 8, (i + 1) * 8);
-            deals.push(this.table.players[i].deal(hand, this.table.players[this.turn].name));
+            deals.push(this.table.players[i].deal(hand, this.player_turn()));
         }
         return Promise.all(deals);
 
+    }
+
+    player_turn() {
+        return this.table.players[this.turn].name;
     }
 
     async play(card: string) {
@@ -485,7 +487,26 @@ class Round {
             const multiplier = 0.05;
 
             // Decide winners
-            if (teams[0].points == teams[1].points) {
+            if (this.solo_du) {
+                if (teams[0].points == 0 && teams[1].players[0] == this.solo_player) {
+                    // solo du win
+                    winners = teams[1];
+                    losers = teams[0];
+                } else if (teams[1].points == 0 && teams[0].players[0] == this.solo_player) {
+                    // solo du win
+                    winners = teams[0];
+                    losers = teams[1];
+                } else {
+                    // solo du loss
+                    if (teams[0].players[0] == this.solo_player) {
+                        winners = teams[1];
+                        losers = teams[0];
+                    } else {
+                        winners = teams[0];
+                        losers = teams[1];
+                    }
+                }
+            } else if (teams[0].points == teams[1].points) {
                 // tie
                 if (this.solo) {
                     // Non-solo is winner
@@ -515,6 +536,10 @@ class Round {
             // Calculate payment
             if (this.solo_du) {
                 payment = 24 * multiplier;
+                if (winners.players[0] != this.solo_player) {
+                    // Double payment if loss
+                    payment *= 2;
+                }
             } else if (this.solo) {
                 payment = 4 * multiplier;
             } else {
@@ -617,6 +642,10 @@ class Round {
 
         return res;
 
+    }
+
+    round_started() {
+        return this.player_ready.size >= 4;
     }
 
     async call(
@@ -747,15 +776,13 @@ class Round {
 class Table {
 
     name: string
-    hash: string
     socket_map = new Map<ws, Player>();
     players = new Array<Player>();
     dealer = 0;
     round?: Round;
 
-    constructor(name: string, hash: string) {
+    constructor(name: string) {
         this.name = name;
-        this.hash = hash;
     }
 
     ready() {
@@ -935,6 +962,8 @@ class Table {
 // Player
 class Player {
 
+    static max_name_length = 20;
+    static min_name_length = 2;
     name: string
     socket?: ws
     balance = 5.00;
@@ -951,15 +980,23 @@ class Player {
         this.table = table;
     }
 
-    connect(socket: ws) {
+    async connect(socket: ws) {
         this.socket = socket;
         this.table.socket_map.set(socket, this);
-        this.table.send({
+        await this.table.send({
             event: 'player-connected',
             table_name: this.table.name,
             player_name: this.name,
         });
-        this.table.send_table_data();
+        await this.table.send_table_data();
+        if (this.table.round && !this.table.round.round_started()) {
+            // Re-deal cards to this player so they can choose their ready strategy
+            await this.send({
+                event: "deal",
+                cards: [...this.original_hand.keys()],
+                player_turn: this.table.round.player_turn()
+            });
+        }
     }
 
     disconnect() {
@@ -1008,11 +1045,11 @@ class Player {
                 }
             } else {
                 const chosen_card = this.table.round.chosen_card;
-                if(chosen_card) {
+                if (chosen_card) {
                     const chosen_card_suit = this.table.round.is_trump(chosen_card) ? 'T' : chosen_card.charAt(1);
-                    if(card_suit == chosen_card_suit && card !== chosen_card && Array.from(this.hand.keys()).includes(chosen_card)) {
+                    if (card_suit == chosen_card_suit && card !== chosen_card && Array.from(this.hand.keys()).includes(chosen_card)) {
                         // Must play chosen card if it matches suit
-                        await this.send({event: 'error', msg: `You must play the ${Table.val_to_string(chosen_card.charAt(0))} of ${Table.suit_to_string(chosen_card.charAt(1))}s since it was chosen to get along with the queens.`});
+                        await this.send({ event: 'error', msg: `You must play the ${Table.val_to_string(chosen_card.charAt(0))} of ${Table.suit_to_string(chosen_card.charAt(1))}s since it was chosen to get along with the queens.` });
                         return;
                     }
                 }

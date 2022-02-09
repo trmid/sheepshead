@@ -17,7 +17,7 @@ const ws_1 = __importDefault(require("ws"));
 const mongodb_1 = __importDefault(require("mongodb"));
 const crypto_1 = __importDefault(require("crypto"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
-const app = express_1.default();
+const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 const mongo_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@sheepshead.oa0bn.mongodb.net/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`;
 const table_lifespan = 1000 * 60 * 60 * 24 * 14;
@@ -43,7 +43,7 @@ let players_active = false;
 setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (players_active && !process.env.DEBUG) {
         players_active = false;
-        const res = yield node_fetch_1.default('https://sheeps-head.herokuapp.com');
+        const res = yield (0, node_fetch_1.default)('https://sheeps-head.herokuapp.com');
         console.log('Sending wake up: ', res.status);
     }
     else {
@@ -102,18 +102,22 @@ function handle_msg(socket, msg, player) {
                             $lt: now - table_lifespan
                         }
                     });
-                    const hashed = hash(data.table_password);
+                    let table_id = '';
+                    while (table_id.length < 8) {
+                        table_id += Math.floor(Math.random() * 16).toString(16);
+                    }
+                    table_id += now.toString(16);
                     const res = yield db.collection("tables").insertOne({
-                        name: data.table_name,
-                        hash: hashed,
+                        name: table_id,
                         players: [],
                         created_at: now,
                         last_used: now
                     });
                     if (res.result.ok) {
-                        table_cache.set(data.table_name, new Table(data.table_name, hashed));
+                        table_cache.set(table_id, new Table(table_id));
                         socket.send(JSON.stringify({
-                            event: 'table-created'
+                            event: 'table-created',
+                            table_id
                         }));
                     }
                     else {
@@ -122,18 +126,13 @@ function handle_msg(socket, msg, player) {
                 }
                 catch (err) {
                     let err_msg = 'There was an unknown error. Please try again...';
-                    if (err instanceof mongodb_1.default.MongoError) {
-                        if (err.message.includes("duplicate key")) {
-                            err_msg = "A table with that name already exists... Please enter a different name.";
-                        }
-                    }
                     console.error(err);
                     socket.send(JSON.stringify({
                         event: 'error',
                         msg: err_msg
                     }));
-                    break;
                 }
+                break;
             }
             case 'join-table': {
                 try {
@@ -143,7 +142,7 @@ function handle_msg(socket, msg, player) {
                         if (yield res.hasNext()) {
                             table_exists = true;
                             const table_data = yield res.next();
-                            const table = new Table(table_data.name, table_data.hash);
+                            const table = new Table(table_data.name);
                             table_cache.set(data.table_name, table);
                             table_data.players.forEach((player_data) => {
                                 const player = new Player(player_data.name, table);
@@ -162,56 +161,59 @@ function handle_msg(socket, msg, player) {
                         const table = table_cache.get(data.table_name);
                         if (!table)
                             throw new Error("There was an unknown error fetching the table from the cache.");
-                        if (valid_pass(data.table_password, table.hash)) {
-                            if (!!table.socket_map.get(socket)) {
-                                socket.send(JSON.stringify({
-                                    event: "error",
-                                    msg: "You are already connected to the table."
-                                }));
-                            }
-                            else {
-                                let player = undefined;
-                                let joined = false;
-                                table.players.forEach(p => {
-                                    if (p.name === data.player_name) {
-                                        if (p.socket) {
-                                            socket.send(JSON.stringify({
-                                                event: 'error',
-                                                msg: 'There is already a player connected with that name... Please try a different name.'
-                                            }));
-                                            joined = true;
-                                        }
-                                        else {
-                                            player = p;
-                                            joined = true;
-                                        }
+                        if (!!table.socket_map.get(socket)) {
+                            socket.send(JSON.stringify({
+                                event: "error",
+                                msg: "You are already connected to the table."
+                            }));
+                        }
+                        else {
+                            let player = undefined;
+                            let joined = false;
+                            table.players.forEach(p => {
+                                if (p.name === data.player_name) {
+                                    if (p.socket) {
+                                        socket.send(JSON.stringify({
+                                            event: 'error',
+                                            msg: 'There is already a player connected with that name... Please try a different name.'
+                                        }));
+                                        joined = true;
                                     }
-                                });
-                                if (!joined) {
+                                    else {
+                                        player = p;
+                                        joined = true;
+                                    }
+                                }
+                            });
+                            if (!joined) {
+                                if (data.player_name.length > Player.max_name_length || data.player_name.length < Player.min_name_length) {
+                                    socket.send(JSON.stringify({
+                                        event: 'error',
+                                        msg: 'Player name must be between 2 and 20 characters'
+                                    }));
+                                }
+                                else {
                                     player = new Player(data.player_name, table);
                                     joined = table.add(player);
                                 }
-                                if (joined && player) {
-                                    db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
-                                    player.connect(socket);
-                                    player_map.set(socket, player);
-                                    if (table.ready() && !table.round) {
-                                        yield table.start_round();
-                                    }
-                                }
-                                else if (!joined) {
-                                    socket.send(JSON.stringify({
-                                        event: 'error',
-                                        msg: 'The requested table is full. Could not join the table.'
-                                    }));
+                            }
+                            if (joined && player) {
+                                db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
+                                player.connect(socket);
+                                player_map.set(socket, player);
+                                socket.send(JSON.stringify({
+                                    event: 'table-joined'
+                                }));
+                                if (table.ready() && !table.round) {
+                                    yield table.start_round();
                                 }
                             }
-                        }
-                        else {
-                            socket.send(JSON.stringify({
-                                event: 'error',
-                                msg: 'Incorrect table name or password. Please try again.'
-                            }));
+                            else if (!joined) {
+                                socket.send(JSON.stringify({
+                                    event: 'error',
+                                    msg: 'The requested table is full. Could not join the table.'
+                                }));
+                            }
                         }
                     }
                 }
@@ -314,9 +316,12 @@ class Round {
         const deals = new Array();
         for (let i = 0; i < 4; i++) {
             const hand = cards.slice(i * 8, (i + 1) * 8);
-            deals.push(this.table.players[i].deal(hand, this.table.players[this.turn].name));
+            deals.push(this.table.players[i].deal(hand, this.player_turn()));
         }
         return Promise.all(deals);
+    }
+    player_turn() {
+        return this.table.players[this.turn].name;
     }
     play(card) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -418,7 +423,27 @@ class Round {
                     team.black_queens = !!(team.dealt.get('QS') && team.dealt.get('QC'));
                 });
                 const multiplier = 0.05;
-                if (teams[0].points == teams[1].points) {
+                if (this.solo_du) {
+                    if (teams[0].points == 0 && teams[1].players[0] == this.solo_player) {
+                        winners = teams[1];
+                        losers = teams[0];
+                    }
+                    else if (teams[1].points == 0 && teams[0].players[0] == this.solo_player) {
+                        winners = teams[0];
+                        losers = teams[1];
+                    }
+                    else {
+                        if (teams[0].players[0] == this.solo_player) {
+                            winners = teams[1];
+                            losers = teams[0];
+                        }
+                        else {
+                            winners = teams[0];
+                            losers = teams[1];
+                        }
+                    }
+                }
+                else if (teams[0].points == teams[1].points) {
                     if (this.solo) {
                         if (teams[0].players.length > 1) {
                             winners = teams[0];
@@ -448,6 +473,9 @@ class Round {
                 }
                 if (this.solo_du) {
                     payment = 24 * multiplier;
+                    if (winners.players[0] != this.solo_player) {
+                        payment *= 2;
+                    }
                 }
                 else if (this.solo) {
                     payment = 4 * multiplier;
@@ -541,6 +569,9 @@ class Round {
             }
             return res;
         });
+    }
+    round_started() {
+        return this.player_ready.size >= 4;
     }
     call(player, call, solo_du, suit, val) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -653,12 +684,11 @@ class Round {
     }
 }
 class Table {
-    constructor(name, hash) {
+    constructor(name) {
         this.socket_map = new Map();
         this.players = new Array();
         this.dealer = 0;
         this.name = name;
-        this.hash = hash;
     }
     ready() {
         return this.players.length == 4
@@ -828,14 +858,23 @@ class Player {
         this.table = table;
     }
     connect(socket) {
-        this.socket = socket;
-        this.table.socket_map.set(socket, this);
-        this.table.send({
-            event: 'player-connected',
-            table_name: this.table.name,
-            player_name: this.name,
+        return __awaiter(this, void 0, void 0, function* () {
+            this.socket = socket;
+            this.table.socket_map.set(socket, this);
+            yield this.table.send({
+                event: 'player-connected',
+                table_name: this.table.name,
+                player_name: this.name,
+            });
+            yield this.table.send_table_data();
+            if (this.table.round && !this.table.round.round_started()) {
+                yield this.send({
+                    event: "deal",
+                    cards: [...this.original_hand.keys()],
+                    player_turn: this.table.round.player_turn()
+                });
+            }
         });
-        this.table.send_table_data();
     }
     disconnect() {
         if (this.socket) {
@@ -930,3 +969,5 @@ class Player {
         });
     }
 }
+Player.max_name_length = 20;
+Player.min_name_length = 2;
