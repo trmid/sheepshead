@@ -29,34 +29,17 @@
     </header>
     <main>
 
-        <form id="table-form" action="javascript:join_table();" style="display: none;">
+        <form id="table-form" action="javascript:create_table();" style="display: none;">
             <fieldset>
-                <legend>Create or Join a Table</legend>
+                <legend>Get Started!</legend>
                 <table>
                     <tr>
-                        <th>Name</th>
-                        <td><input type="text" id="table-name" placeholder="Table Name" required></td>
+                        <th>My Player Name</th>
+                        <td><input type="text" id="table-player" placeholder="Your Name" required minlength="2" maxlength="20"></td>
                     </tr>
                     <tr>
-                        <th>Password</th>
-                        <td><input type="password" id="table-password" placeholder="Table Password" required></td>
-                    </tr>
-                    <tr>
-                        <th>Join as</th>
-                        <td><input type="text" id="table-player" placeholder="Your Name" required></td>
-                    </tr>
-                    <tr>
-                        <th>Options</th>
-                        <td>
-                            <select id="table-options" required>
-                                <option value="join-table" selected>Join Table</option>
-                                <option value="create-table">Create and Join Table</option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th></th>
-                        <td><input type="submit" value="Join" /></td>
+                        <th>Play</th>
+                        <td><input type="submit" value="Create a Table" /></td>
                     </tr>
                 </table>
             </fieldset>
@@ -86,12 +69,11 @@
 
                 </div>
                 <div id="my-options">
-                    <button id="toggle-sort-hand" onclick="this.children[0].click();"><input type="checkbox"
-                            id="sort-hand" checked /> Sort Hand</button>
+                    <button id="toggle-sort-hand" onclick="this.children[0].click();"><input type="checkbox" id="sort-hand" checked /> Sort Hand</button>
                     <br>
-                    <button
-                        onclick="if(window.confirm('This is a development feature and will deal a new hand. Are you sure you want to do this?')) socket.send(JSON.stringify({event: 'deal-again'}));">Deal
-                        Again</button>
+                    <button onclick="leave_table();">Leave Table</button>
+                    <!-- <button onclick="if(window.confirm('This is a development feature and will deal a new hand. Are you sure you want to do this?')) socket.send(JSON.stringify({event: 'deal-again'}));">Deal
+                        Again</button> -->
                 </div>
                 <div id="my-hand">
 
@@ -109,8 +91,7 @@
                 </table>
             </div>
             <div id="text-row">
-                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..."
-                    maxlength="1024"></textarea>
+                <textarea id="send-text" cols="30" rows="3" placeholder="Send a message to the table..." maxlength="1024"></textarea>
                 <button id="send-btn">Send</button>
             </div>
         </article>
@@ -124,6 +105,14 @@
     <footer>
         &copy; 2020 Trevor Richard
     </footer>
+
+    <!-- Popup Container -->
+    <div id="popup-container">
+        <div id="popup">
+            <!-- Set Dynamically -->
+        </div>
+    </div>
+
 </body>
 
 </html>

@@ -45,8 +45,23 @@ var log_elem;
 var place_card_audio = new Array();
 var play_card_audio = new Array();
 window.addEventListener('load', function () {
+    var query = new URLSearchParams(window.location.search);
+    var table_id = query.get("id");
+    if (table_id && table_id.length > 0) {
+        var container = document.createElement("div");
+        container.id = "loading-container";
+        var header = document.createElement("h3");
+        header.innerHTML = "Joining Table";
+        var spinner = document.createElement("div");
+        spinner.classList.add("spinner");
+        var spinner_inner = document.createElement("div");
+        spinner_inner.classList.add("spinner-inner");
+        spinner.append(spinner_inner);
+        container.append(header, spinner);
+        popup([container]);
+    }
     for (var i = 0; i < 8; i++) {
-        place_card_audio.push(document.getElementById("place_card_" + i));
+        place_card_audio.push(document.getElementById("place_card_".concat(i)));
     }
     play_card_audio.push(document.getElementById("play_card_0"));
     log_elem = document.getElementById("log");
@@ -56,6 +71,8 @@ window.addEventListener('load', function () {
         else
             scrolled = true;
     });
+    var chat_visible = localStorage.getItem("chat-visible");
+    toggle_chat(chat_visible === null ? true : chat_visible === 'true');
     var send_btn = document.getElementById("send-btn");
     var send_text = document.getElementById("send-text");
     var send_msg = function () {
@@ -75,6 +92,19 @@ window.addEventListener('load', function () {
             send_msg();
         }
     });
+    var player_name_input = document.querySelector("#table-player");
+    if (player_name_input) {
+        var player_name = localStorage.getItem("player_name");
+        player_name_input.value = player_name !== null && player_name !== void 0 ? player_name : '';
+        player_name_input.addEventListener("change", function () {
+            if (player_name_input.value.length > 0) {
+                localStorage.setItem("player_name", player_name_input.value);
+            }
+            else {
+                localStorage.removeItem("player_name");
+            }
+        });
+    }
     socket = new WebSocket("wss://sheeps-head.herokuapp.com");
     socket.onclose = function () {
         var msg = "You have been disconnected from the server... Please reload the page and try again.";
@@ -105,30 +135,35 @@ window.addEventListener('load', function () {
                     }));
                     log("Connected to server!", "server");
                     document.getElementById("table-form").removeAttribute("style");
-                    return [4, announce("Welcome to Sheepshead Online!", delay)];
+                    if (!(table_id && table_id.length > 0)) return [3, 2];
+                    join_table(table_id);
+                    return [4, announce("Joining table...")];
                 case 1:
                     _a.sent();
-                    return [4, announce("Play with others by creating a table and sharing the table name and password with other players.", delay)];
-                case 2:
-                    _a.sent();
-                    return [4, announce("Already have a table? Enter the table name and password in the form to join the table.", delay)];
+                    return [3, 10];
+                case 2: return [4, announce("Welcome to Sheepshead Online!", delay)];
                 case 3:
                     _a.sent();
-                    return [4, announce("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", delay)];
+                    return [4, announce("Play with others by creating a table and sharing the table link with other players.", delay)];
                 case 4:
                     _a.sent();
-                    return [4, announce("However, if a table has not used within the last 2 weeks it will be deleted.", delay)];
+                    return [4, announce("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", delay)];
                 case 5:
                     _a.sent();
-                    return [4, announce("Have fun :)", delay)];
+                    return [4, announce("However, if a table has not used within the last 2 weeks it will be removed.", delay)];
                 case 6:
                     _a.sent();
-                    return [4, announce("Have any feedback? Email me at <a href='mailto: sheapshead@pernetsystems.com'>sheepshead@pernetsystems.com</a>.", delay, "none")];
+                    return [4, announce("Have fun :)", delay)];
                 case 7:
                     _a.sent();
-                    return [4, announce("Found a bug? Report it <a href='https://github.com/midpoint68/sheepshead/issues/new'>here</a>.", delay, "none")];
+                    return [4, announce("Have any feedback? Email me at <a href='mailto: sheapshead@pernetsystems.com'>sheepshead@pernetsystems.com</a>.", delay, "none")];
                 case 8:
                     _a.sent();
+                    return [4, announce("Found a bug? Report it <a href='https://github.com/midpoint68/sheepshead/issues/new'>here</a>.", delay, "none")];
+                case 9:
+                    _a.sent();
+                    _a.label = 10;
+                case 10:
                     setInterval(function () {
                         socket.send(JSON.stringify({ 'event': 'ping' }));
                     }, 1000 * 30);
@@ -146,20 +181,24 @@ window.addEventListener('load', function () {
                     break;
                 case 'table-created':
                     log("Table Created!", 'server');
+                    show_table_link(data.table_id);
                     break;
-                case 'player-connected': {
-                    log(data.player_name + " has connected to the table!", 'server');
+                case 'table-joined':
+                    hide_popup();
                     var table_form = document.getElementById('table-form');
                     if (table_form)
                         table_form.remove();
                     (document.getElementById('game-area')).removeAttribute('style');
                     break;
+                case 'player-connected': {
+                    log("".concat(data.player_name, " has connected to the table!"), 'server');
+                    break;
                 }
                 case 'player-joined':
-                    log(data.player_name + " has joined the table!", 'server');
+                    log("".concat(data.player_name, " has joined the table!"), 'server');
                     break;
                 case 'player-dc':
-                    log(data.player_name + " has disconnected from the table...", 'server');
+                    log("".concat(data.player_name, " has disconnected from the table..."), 'server');
                     break;
                 case 'card-played': {
                     if (clear_table) {
@@ -173,7 +212,7 @@ window.addEventListener('load', function () {
                         document.getElementById("my-card-shelf").append(card_elem(data.card, false, 'animate-transform-up'));
                     }
                     else {
-                        document.getElementById("card-holder-" + data.player_name).append(card_elem(data.card, false, 'animate-transform-down'));
+                        document.getElementById("card-holder-".concat(data.player_name)).append(card_elem(data.card, false, 'animate-transform-down'));
                     }
                     play_card_audio[Math.floor(Math.random() * play_card_audio.length)].play();
                     if (data.last_trick) {
@@ -183,16 +222,16 @@ window.addEventListener('load', function () {
                         }
                         log(last_trick, 'game');
                     }
-                    log(data.player_name + " played " + text_card(data.card) + ".", "game");
+                    log("".concat(data.player_name, " played ").concat(text_card(data.card), "."), "game");
                     if (data.winner) {
-                        log(data.winner + " has taken the trick!", 'strategy');
+                        log("".concat(data.winner, " has taken the trick!"), 'strategy');
                         clear_table = true;
-                        var card_holder = data.winner === my_name ? document.getElementById("my-card-shelf") : document.getElementById("card-holder-" + data.winner);
+                        var card_holder = data.winner === my_name ? document.getElementById("my-card-shelf") : document.getElementById("card-holder-".concat(data.winner));
                         card_holder.getElementsByClassName('card')[0].classList.add('winner');
                     }
                     if (data.player_turn) {
                         set_turn(data.player_turn);
-                        log("It is " + data.player_turn + "'" + (data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's') + " turn to play a card...", 'game');
+                        log("It is ".concat(data.player_turn, "'").concat(data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's', " turn to play a card..."), 'game');
                     }
                     update_hand(data.my_hand, data.trump);
                     if (data.winners) {
@@ -200,13 +239,13 @@ window.addEventListener('load', function () {
                         for (var i = 0; i < data.winners.players.length; i++) {
                             winners += data.winners.players[i].name + (i < data.winners.players.length - 1 ? ', ' : '');
                         }
-                        log(winners + " " + (data.winners.players.length > 1 ? 'have' : 'has') + " won the round with " + data.winners.points + " points! Winnings: $" + data.payment.toFixed(2), "strategy");
+                        log("".concat(winners, " ").concat(data.winners.players.length > 1 ? 'have' : 'has', " won the round with ").concat(data.winners.points, " points! Winnings: $").concat(data.payment.toFixed(2)), "strategy");
                         var balances = '';
                         var players_1 = data.winners.players.concat(data.losers.players);
                         for (var i = 0; i < players_1.length; i++) {
-                            balances += "[" + players_1[i].name + ": $" + players_1[i].balance.toFixed(2) + "] ";
+                            balances += "[".concat(players_1[i].name, ": $").concat(players_1[i].balance.toFixed(2), "] ");
                         }
-                        log("Player Balances: " + balances, 'strategy');
+                        log("Player Balances: ".concat(balances), 'strategy');
                     }
                     break;
                 }
@@ -231,20 +270,21 @@ window.addEventListener('load', function () {
                         player_shelf.append(player_elem(player));
                         var card_holder = document.createElement("div");
                         card_holder.classList.add("card-holder");
-                        card_holder.id = "card-holder-" + player.name;
+                        card_holder.id = "card-holder-".concat(player.name);
                         card_shelf.append(card_holder);
                     }
                     break;
                 }
                 case 'error':
+                    hide_popup();
                     log(data.msg, 'error');
                     break;
                 case 'msg':
-                    log(data.player_name + ": " + data.msg);
+                    log("".concat(data.player_name, ": ").concat(data.msg));
                     break;
                 case 'ready': {
-                    log(data.player_name + " is ready!", 'game');
-                    var player_elem_1 = document.getElementById("player-" + data.player_name);
+                    log("".concat(data.player_name, " is ready!"), 'game');
+                    var player_elem_1 = document.getElementById("player-".concat(data.player_name));
                     if (!player_elem_1.classList.contains("ready")) {
                         var ready = document.createElement("div");
                         ready.innerHTML = "Ready";
@@ -263,7 +303,7 @@ window.addEventListener('load', function () {
                         window.alert(data.strategy_call);
                     }
                     set_turn(data.player_turn);
-                    log("It is " + data.player_turn + "'" + (data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's') + " turn to play a card...", 'game');
+                    log("It is ".concat(data.player_turn, "'").concat(data.player_turn.charAt(data.player_turn.length - 1).toUpperCase() == 'S' ? '' : 's', " turn to play a card..."), 'game');
                     update_hand(data.my_hand, data.trump);
                     var players = Array.from(document.getElementsByClassName("player"));
                     players.forEach(function (elem) {
@@ -280,29 +320,79 @@ window.addEventListener('load', function () {
         }
     };
 });
-function join_table() {
-    var name = document.getElementById('table-name').value;
-    var pass = document.getElementById('table-password').value;
-    var event = document.getElementById('table-options').value;
-    var player_name = document.getElementById('table-player').value;
-    if (name && pass && event && player_name) {
-        if (name.length < 4 || pass.length < 4) {
-            log("Table name and password must be at least 4 characters long.", "error");
-        }
-        else if (player_name.length < 3) {
-            log("Your player name must be at least 3 characters long.", "error");
+function create_table() {
+    socket.send(JSON.stringify({
+        event: 'create-table'
+    }));
+}
+function join_table(table_id) {
+    var player_name = localStorage.getItem("player_name");
+    while (!player_name) {
+        player_name = window.prompt("Enter your player name to join the table:");
+        if (player_name.length < 2 || player_name.length > 20) {
+            window.alert("Your player name must be between 2 and 20 characters long.");
+            player_name = null;
         }
         else {
-            socket.send(JSON.stringify({
-                event: event,
-                table_name: name,
-                table_password: pass,
-                player_name: player_name
-            }));
+            localStorage.setItem("player_name", player_name);
         }
     }
+    socket.send(JSON.stringify({
+        event: 'join-table',
+        table_name: table_id,
+        player_name: player_name
+    }));
 }
-;
+function leave_table() {
+    if (window.confirm("Are you sure you want to leave the table?")) {
+        window.location.assign(window.location.origin + window.location.pathname);
+    }
+}
+function hide_popup() {
+    var _a;
+    (_a = document.querySelector("#popup-container")) === null || _a === void 0 ? void 0 : _a.classList.remove("show");
+}
+function popup(content) {
+    var container = document.querySelector("#popup-container");
+    if (!container)
+        throw new Error("Can't find popup container in document...");
+    var popup = document.querySelector("#popup");
+    if (!popup)
+        throw new Error("Can't find popup in document...");
+    popup.innerHTML = "";
+    popup.append.apply(popup, content);
+    container.classList.add("show");
+}
+function show_table_link(table_id) {
+    var fieldset = document.createElement("fieldset");
+    var legend = document.createElement("legend");
+    legend.innerHTML = "Table Created!";
+    var info = document.createElement("p");
+    info.innerHTML = "Copy and share this link with other players to let them join your table:";
+    var share_link = "".concat(window.location.origin).concat(window.location.pathname, "?id=").concat(table_id);
+    var link = document.createElement("input");
+    link.type = "text";
+    link.disabled = true;
+    link.value = share_link;
+    var copy_btn = document.createElement("button");
+    copy_btn.innerHTML = "Copy to Clipboard";
+    var copy = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        window.navigator.clipboard.writeText(share_link);
+        window.alert("Link Copied!");
+    };
+    copy_btn.addEventListener("click", copy);
+    link.addEventListener("click", copy);
+    var br = document.createElement("br");
+    var continue_btn = document.createElement("button");
+    continue_btn.innerHTML = "Join Table";
+    continue_btn.addEventListener("click", function () {
+        window.location.assign(share_link);
+    });
+    fieldset.append(legend, info, link, copy_btn, br, continue_btn);
+    popup([fieldset]);
+}
 function log(msg, className) {
     if (className === void 0) { className = "none"; }
     var row = document.createElement('tr');
@@ -338,19 +428,20 @@ function log(msg, className) {
         }, 2000);
     }
 }
-function toggle_chat() {
+function toggle_chat(visible) {
     var toggle_chat = document.getElementById('toggle-chat');
     var log = document.getElementById('log-area');
-    log.classList.toggle("hide-log");
-    var visible = !log.classList.contains("hide-log");
+    visible = visible !== undefined ? visible : log.classList.contains("hide-log");
+    log.classList.toggle("hide-log", !visible);
     toggle_chat.innerHTML = visible ? "Hide Chat" : "Show Chat";
+    localStorage.setItem("chat-visible", "" + visible);
     if (visible) {
         log_elem.scrollTop = log_elem.scrollHeight;
         scrolled = false;
     }
 }
 function set_turn(name) {
-    var player = document.getElementById("player-" + name);
+    var player = document.getElementById("player-".concat(name));
     var last_turn = Array.from(document.getElementsByClassName('player-turn'));
     last_turn.forEach(function (elem) {
         elem.classList.remove('player-turn');
@@ -361,12 +452,12 @@ function player_elem(player) {
     var elem = document.createElement("div");
     var name = document.createElement("div");
     var balance = document.createElement("div");
-    elem.id = "player-" + player.name;
+    elem.id = "player-".concat(player.name);
     elem.classList.add("player");
     name.classList.add("player-name");
     name.innerHTML = player.name;
     balance.classList.add("player-balance");
-    balance.innerHTML = "$" + player.balance.toFixed(2);
+    balance.innerHTML = "$".concat(player.balance.toFixed(2));
     elem.append(name);
     elem.append(document.createElement("hr"));
     elem.append(balance);
@@ -499,16 +590,16 @@ function suit_img(suit, small) {
     var src = '';
     switch (suit) {
         case 'D':
-            src = "img/diamond" + (small ? '_sm' : '') + ".png";
+            src = "img/diamond".concat(small ? '_sm' : '', ".png");
             break;
         case 'H':
-            src = "img/heart" + (small ? '_sm' : '') + ".png";
+            src = "img/heart".concat(small ? '_sm' : '', ".png");
             break;
         case 'S':
-            src = "img/spade" + (small ? '_sm' : '') + ".png";
+            src = "img/spade".concat(small ? '_sm' : '', ".png");
             break;
         case 'C':
-            src = "img/club" + (small ? '_sm' : '') + ".png";
+            src = "img/club".concat(small ? '_sm' : '', ".png");
             break;
     }
     img.src = src;
@@ -566,8 +657,8 @@ function start_round(cards) {
         var bb = solo.getBoundingClientRect();
         document.body.append(selector);
         selector.style.position = "fixed";
-        selector.style.top = bb.top - (15 + selector.getBoundingClientRect().height) + "px";
-        selector.style.left = bb.left + "px";
+        selector.style.top = "".concat(bb.top - (15 + selector.getBoundingClientRect().height), "px");
+        selector.style.left = "".concat(bb.left, "px");
     });
     round_options.append(solo);
     var solo_du = document.createElement("button");
@@ -587,8 +678,8 @@ function start_round(cards) {
         var bb = solo_du.getBoundingClientRect();
         document.body.append(selector);
         selector.style.position = "fixed";
-        selector.style.top = bb.top - (15 + selector.getBoundingClientRect().height) + "px";
-        selector.style.left = bb.left + "px";
+        selector.style.top = "".concat(bb.top - (15 + selector.getBoundingClientRect().height), "px");
+        selector.style.left = "".concat(bb.left, "px");
     });
     round_options.append(solo_du);
     if (queens) {

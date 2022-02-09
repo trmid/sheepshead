@@ -475,6 +475,107 @@ input[type=checkbox]{
     transition: opacity 1s ease-in;
 }
 
+/* Popups */
+
+#popup-container {
+    position: fixed;
+    display: none;
+    z-index: 100;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: #2224;
+}
+#popup-container.show {
+    display: flex;
+}
+
+#popup {
+    width: 600px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow: auto;
+    padding: 1rem;
+    box-shadow: #2224;
+    border-radius: 1rem;
+    background-color: var(--light);
+}
+
+/* Loading Container */
+
+#loading-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Spinner */
+
+.spinner {
+    background-color: transparent;
+    width: 64px;
+    height: 64px;
+    position: relative;
+    margin: 0.5rem;
+    perspective: 1000px;
+}
+.spinner:hover .spinner-inner {
+    transform: rotateY(180deg);
+}
+.spinner-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    animation: spinner-inner 4s infinite linear;
+}
+.spinner-inner::before,
+.spinner-inner::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center center;
+}
+.spinner-inner::before {
+    background-image: url("img/diamond.png");
+    animation: spinner-before 4s infinite step-start;
+    animation-delay: -1s;
+}
+.spinner-inner::after {
+    background-image: url("img/spade.png");
+    transform: rotateY(180deg);
+    animation: spinner-after 4s infinite step-start;
+}
+@keyframes spinner-inner {
+    from { transform: rotateY(0); }
+    to { transform: rotateY(720deg); }
+}
+@keyframes spinner-before {
+    0% {
+        background-image: url("img/diamond.png");
+    }
+    50% {
+        background-image: url("img/heart.png");
+    }
+}
+@keyframes spinner-after {
+    0% {
+        background-image: url("img/spade.png");
+    }
+    50% {
+        background-image: url("img/club.png");
+    }
+}
+
 /* MOBILE */
 
 @media only screen and (max-width: 768px){

@@ -1,35 +1,35 @@
 {
-  "name": "sheepshead",
-  "version": "1.0.0",
-  "description": "4-Player Online Sheepshead Card Game",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "scripts": {
-    "start": "node ./",
-    "test": "tsc && tsc --removeComments docs/client.ts && node ./"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/midpoint68/sheepshead.git"
-  },
-  "author": "Trevor Richard",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/midpoint68/sheepshead/issues"
-  },
-  "homepage": "https://github.com/midpoint68/sheepshead#readme",
-  "dependencies": {
-    "@types/express": "^4.17.12",
-    "@types/mongodb": "^3.6.17",
-    "@types/ws": "^7.4.4",
-    "express": "^4.17.1",
-    "mongodb": "^3.6.9",
-    "node-fetch": "^2.6.1",
-    "ws": "^7.4.6"
-  },
-  "devDependencies": {
-    "@types/node-fetch": "^2.5.10"
-  }
+    "name": "sheepshead",
+    "version": "1.1.0",
+    "description": "4-Player Online Sheepshead Card Game",
+    "main": "index.js",
+    "directories": {
+        "doc": "docs"
+    },
+    "scripts": {
+        "start": "node ./",
+        "test": "tsc && tsc --removeComments docs/client.ts && node ./"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/midpoint68/sheepshead.git"
+    },
+    "author": "Trevor Richard",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/midpoint68/sheepshead/issues"
+    },
+    "homepage": "https://github.com/midpoint68/sheepshead#readme",
+    "dependencies": {
+        "@types/express": "^4.17.12",
+        "@types/mongodb": "^3.6.17",
+        "@types/ws": "^7.4.4",
+        "express": "^4.17.1",
+        "mongodb": "^3.6.9",
+        "node-fetch": "^2.6.1",
+        "ws": "^7.4.6"
+    },
+    "devDependencies": {
+        "@types/node-fetch": "^2.5.10"
+    }
 }
