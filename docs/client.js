@@ -105,7 +105,7 @@ window.addEventListener('load', function () {
             }
         });
     }
-    socket = new WebSocket("ws://localhost:3000");
+    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
     socket.onclose = function () {
         var msg = "You have been disconnected from the server... Please reload the page and try again.";
         log(msg, "error");
