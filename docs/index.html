@@ -20,27 +20,41 @@
     <audio src="audio/place_card_2.ogg" id="place_card_5"></audio>
     <audio src="audio/place_card_0.ogg" id="place_card_6"></audio>
     <audio src="audio/place_card_1.ogg" id="place_card_7"></audio>
+
+    <!-- IcoFont -->
+    <link rel="stylesheet" href="icofont/icofont.min.css">
 </head>
 
 <body>
-    <img id="background" src="img/pexels-brett-sayles-5489457.jpg" alt="">
     <header>
         <h2>Sheepshead</h2>
         <button id="toggle-chat" onclick="toggle_chat();">Hide Chat</button>
     </header>
     <main>
 
-        <form id="table-form" action="javascript:create_table();" style="display: none;">
+        <form id="table-form" action="javascript:;" style="display: none;">
             <fieldset>
                 <legend>Get Started!</legend>
                 <table>
                     <tr>
                         <th>My Player Name</th>
                         <td><input type="text" id="table-player" placeholder="Your Name" required minlength="2" maxlength="20"></td>
+                        <td></td>
                     </tr>
                     <tr>
-                        <th>Play</th>
-                        <td><input type="submit" value="Create a Table" /></td>
+                        <th>Join</th>
+                        <td><input type="text" id="table-code" placeholder="Table Code"></td>
+                        <td><input type="submit" value="Join Table" onclick="join_table(document.getElementById('table-code')?.value ?? '');"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3">
+                            <hr>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Create</th>
+                        <td><input type="submit" value="Create a Table" onclick="create_table();" /></td>
+                        <td></td>
                     </tr>
                 </table>
             </fieldset>

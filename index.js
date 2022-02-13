@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ws_1 = __importDefault(require("ws"));
 const mongodb_1 = __importDefault(require("mongodb"));
-const crypto_1 = __importDefault(require("crypto"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
@@ -74,14 +73,6 @@ server.on('upgrade', (req, socket, head) => {
     });
 });
 const table_cache = new Map();
-function hash(pass) {
-    const hash = crypto_1.default.createHash("sha256");
-    hash.update(pass);
-    return hash.digest("hex");
-}
-function valid_pass(pass, hashed) {
-    return hash(pass) === hashed;
-}
 function handle_msg(socket, msg, player) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -96,17 +87,21 @@ function handle_msg(socket, msg, player) {
             }
             case 'create-table': {
                 try {
-                    const now = Date.now();
+                    let now = Date.now();
                     yield db.collection("tables").deleteMany({
                         last_used: {
                             $lt: now - table_lifespan
                         }
                     });
                     let table_id = '';
-                    while (table_id.length < 8) {
-                        table_id += Math.floor(Math.random() * 16).toString(16);
-                    }
-                    table_id += now.toString(16);
+                    do {
+                        now = Date.now();
+                        table_id = (now % 10000).toString(16);
+                        while (table_id.length < 6) {
+                            table_id += Math.floor(Math.random() * 16).toString(16);
+                        }
+                        table_id = table_id.toUpperCase();
+                    } while (!!(yield db.collection("tables").findOne({ name: table_id })));
                     const res = yield db.collection("tables").insertOne({
                         name: table_id,
                         players: [],

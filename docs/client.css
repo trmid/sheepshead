@@ -11,12 +11,11 @@
 
 /* BODY */
 
-html,body,#background{
+html,body{
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background-color: white;
-
+    background-color: #eee;
     position: fixed;
     top: 0;
     left: 0;
@@ -35,6 +34,13 @@ body{
     align-items: stretch;
 
     overflow-y: auto;
+    background-image: url(img/pexels-brett-sayles-5489457.jpg);
+    background-attachment: fixed;
+    -webkit-background-size: 1920px 1280px;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    box-sizing: content-box;
 }
 
 /* HEADER */
@@ -131,6 +137,8 @@ main{
     background-color: var(--light);
     border-radius: 0.25em;
     box-shadow: 2px 2px 7px black;
+    position: absolute;
+    bottom: 0;
 }
 
 #solo-deux-container{
@@ -143,7 +151,7 @@ main{
 #my-shelf{
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: stretch;
 }
@@ -216,9 +224,11 @@ main{
 /* LOG */
 
 #log-area{
+    flex-shrink: 1;
     margin: 0.5em;
     max-height: 88vh;
     max-width: 40em;
+    min-width: 10em;
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
@@ -341,9 +351,9 @@ input[type=checkbox]{
 
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
 }
 
 .card-holder{
@@ -356,7 +366,7 @@ input[type=checkbox]{
     height: 7em;
     border-radius: 0.25em;
     border: 1px solid black;
-    margin: 0.25em;
+    margin: 0.2em;
     position: relative;
     background-color: white;
 
@@ -559,7 +569,7 @@ input[type=checkbox]{
 
 /* MOBILE */
 
-@media only screen and (max-width: 768px){
+@media only screen and (max-width: 1250px){
 
     #log-area{
         margin: 0;
@@ -581,20 +591,24 @@ input[type=checkbox]{
         justify-content: space-evenly;
         align-items: center;
     
-        min-height: 3.5em;
+        min-height: 5em;
     }
 
     .card{
-        height: 3.5em;
-        width: 2.5em;
+        width: 3.5714em;
+        height: 5em;
     }
 
     .card-value{
-        font-size: 0.7;
+        font-size: 0.8;
     }
 
-    #my-hand{
-        min-width: 90vw;
+    #my-shelf,
+    #my-hand {
+        flex-wrap: wrap;
+    }
+    #my-hand {
+        min-width: 0;
     }
 
 }

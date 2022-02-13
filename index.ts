@@ -1,7 +1,6 @@
 import express from 'express';
 import ws from 'ws';
-import mongo, { MongoError } from 'mongodb';
-import crypto from 'crypto';
+import mongo from 'mongodb';
 import fetch from 'node-fetch';
 
 const app = express();
@@ -83,16 +82,6 @@ const table_cache = new Map<string, Table>();
 
 
 // Functions
-function hash(pass: string) {
-    const hash = crypto.createHash("sha256");
-    hash.update(pass);
-    return hash.digest("hex");
-}
-
-function valid_pass(pass: string, hashed: string) {
-    return hash(pass) === hashed;
-}
-
 async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
     if (typeof msg !== 'string') return;
     players_active = true;
@@ -105,7 +94,7 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
         case 'create-table': {
             try {
 
-                const now = Date.now();
+                let now = Date.now();
 
                 // Delete Old Tables
                 await db.collection("tables").deleteMany({
@@ -116,10 +105,14 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
 
                 // Create random table ID
                 let table_id = '';
-                while (table_id.length < 8) {
-                    table_id += Math.floor(Math.random() * 16).toString(16);
-                }
-                table_id += now.toString(16);
+                do {
+                    now = Date.now();
+                    table_id = (now % 10000).toString(16);
+                    while (table_id.length < 6) {
+                        table_id += Math.floor(Math.random() * 16).toString(16);
+                    }
+                    table_id = table_id.toUpperCase();
+                } while (!!(await db.collection("tables").findOne({ name: table_id })));
 
                 // Insert Table
                 const res = await db.collection("tables").insertOne({

@@ -105,7 +105,7 @@ window.addEventListener('load', function () {
             }
         });
     }
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
     socket.onclose = function () {
         var msg = "You have been disconnected from the server... Please reload the page and try again.";
         log(msg, "error");
@@ -144,7 +144,7 @@ window.addEventListener('load', function () {
                 case 2: return [4, announce("Welcome to Sheepshead Online!", delay)];
                 case 3:
                     _a.sent();
-                    return [4, announce("Play with others by creating a table and sharing the table link with other players.", delay)];
+                    return [4, announce("Play with others by creating a table and sharing the table link or 6-character code with other players.", delay)];
                 case 4:
                     _a.sent();
                     return [4, announce("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", delay)];
@@ -368,29 +368,38 @@ function show_table_link(table_id) {
     var legend = document.createElement("legend");
     legend.innerHTML = "Table Created!";
     var info = document.createElement("p");
-    info.innerHTML = "Copy and share this link with other players to let them join your table:";
+    info.innerHTML = "Copy and share the table link or 6-character code with other players to let them join your table:";
     var share_link = "".concat(window.location.origin).concat(window.location.pathname, "?id=").concat(table_id);
     var link = document.createElement("input");
     link.type = "text";
     link.disabled = true;
     link.value = share_link;
     var copy_btn = document.createElement("button");
-    copy_btn.innerHTML = "Copy to Clipboard";
-    var copy = function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+    copy_btn.innerHTML = "Copy Link";
+    var copy_link = function () {
         window.navigator.clipboard.writeText(share_link);
-        window.alert("Link Copied!");
+        window.alert("Link copied to clipboard!");
     };
-    copy_btn.addEventListener("click", copy);
-    link.addEventListener("click", copy);
-    var br = document.createElement("br");
+    copy_btn.addEventListener("click", copy_link);
+    link.addEventListener("click", copy_link);
+    var code = document.createElement("input");
+    code.type = "text";
+    code.disabled = true;
+    code.value = table_id;
+    var copy_btn_2 = document.createElement("button");
+    copy_btn_2.innerHTML = "Copy Code";
+    var copy_code = function () {
+        window.navigator.clipboard.writeText(table_id);
+        window.alert("Code copied to clipboard!");
+    };
+    copy_btn_2.addEventListener("click", copy_code);
+    code.addEventListener("click", copy_code);
     var continue_btn = document.createElement("button");
     continue_btn.innerHTML = "Join Table";
     continue_btn.addEventListener("click", function () {
         window.location.assign(share_link);
     });
-    fieldset.append(legend, info, link, copy_btn, br, continue_btn);
+    fieldset.append(legend, info, link, copy_btn, document.createElement('br'), code, copy_btn_2, document.createElement('br'), continue_btn);
     popup([fieldset]);
 }
 function log(msg, className) {

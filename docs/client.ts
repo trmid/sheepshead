@@ -90,7 +90,7 @@ window.addEventListener('load', () => {
      * 
      * ws://localhost:3000
      */
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
 
     socket.onclose = () => {
         const msg = "You have been disconnected from the server... Please reload the page and try again.";
@@ -124,7 +124,7 @@ window.addEventListener('load', () => {
             await announce("Joining table...");
         } else {
             await announce("Welcome to Sheepshead Online!", delay);
-            await announce("Play with others by creating a table and sharing the table link with other players.", delay);
+            await announce("Play with others by creating a table and sharing the table link or 6-character code with other players.", delay);
             await announce("There must be 4 players at a table to play. The table information and player balances will be stored so you can keep playing later!", delay);
             await announce("However, if a table has not used within the last 2 weeks it will be removed.", delay);
             await announce("Have fun :)", delay);
@@ -372,37 +372,61 @@ function show_table_link(table_id: string) {
     const fieldset = document.createElement("fieldset");
     const legend = document.createElement("legend");
     legend.innerHTML = "Table Created!";
+
+    // Info
     const info = document.createElement("p");
-    info.innerHTML = "Copy and share this link with other players to let them join your table:";
+    info.innerHTML = "Copy and share the table link or 6-character code with other players to let them join your table:";
+
+    // Link
     const share_link = `${window.location.origin}${window.location.pathname}?id=${table_id}`;
     const link = document.createElement("input");
     link.type = "text";
     link.disabled = true;
     link.value = share_link;
     const copy_btn = document.createElement("button");
-    copy_btn.innerHTML = "Copy to Clipboard";
-    const copy = (e: MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+    copy_btn.innerHTML = "Copy Link";
+    const copy_link = () => {
         window.navigator.clipboard.writeText(share_link);
-        window.alert("Link Copied!");
+        window.alert("Link copied to clipboard!");
     };
-    copy_btn.addEventListener("click", copy);
-    link.addEventListener("click", copy);
-    const br = document.createElement("br");
+    copy_btn.addEventListener("click", copy_link);
+    link.addEventListener("click", copy_link);
+
+    // Code
+    const code = document.createElement("input");
+    code.type = "text";
+    code.disabled = true;
+    code.value = table_id;
+    const copy_btn_2 = document.createElement("button");
+    copy_btn_2.innerHTML = "Copy Code";
+    const copy_code = () => {
+        window.navigator.clipboard.writeText(table_id);
+        window.alert("Code copied to clipboard!");
+    };
+    copy_btn_2.addEventListener("click", copy_code);
+    code.addEventListener("click", copy_code);
+
+    // Continue Button
     const continue_btn = document.createElement("button");
     continue_btn.innerHTML = "Join Table";
     continue_btn.addEventListener("click", () => {
         window.location.assign(share_link);
     });
+
+    // Append all
     fieldset.append(
         legend,
         info,
         link,
         copy_btn,
-        br,
+        document.createElement('br'),
+        code,
+        copy_btn_2,
+        document.createElement('br'),
         continue_btn
     );
+
+    // Create Popup
     popup([fieldset]);
 }
 
