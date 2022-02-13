@@ -146,14 +146,15 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
         case 'join-table': {
             try {
                 // Ensure the table exists
-                let table_exists = !!table_cache.get(data.table_name);
+                const table_id = data.table_name.toUpperCase();
+                let table_exists = !!table_cache.get(table_id);
                 if (!table_exists) {
-                    const res = db.collection("tables").find({ name: data.table_name });
+                    const res = db.collection("tables").find({ name: table_id });
                     if (await res.hasNext()) {
                         table_exists = true;
                         const table_data = await res.next();
                         const table = new Table(table_data.name);
-                        table_cache.set(data.table_name, table);
+                        table_cache.set(table_id, table);
                         table_data.players.forEach((player_data: { name: string, balance: number }) => {
                             // Add existing players to table
                             const player = new Player(player_data.name, table);

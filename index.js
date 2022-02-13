@@ -131,14 +131,15 @@ function handle_msg(socket, msg, player) {
             }
             case 'join-table': {
                 try {
-                    let table_exists = !!table_cache.get(data.table_name);
+                    const table_id = data.table_name.toUpperCase();
+                    let table_exists = !!table_cache.get(table_id);
                     if (!table_exists) {
-                        const res = db.collection("tables").find({ name: data.table_name });
+                        const res = db.collection("tables").find({ name: table_id });
                         if (yield res.hasNext()) {
                             table_exists = true;
                             const table_data = yield res.next();
                             const table = new Table(table_data.name);
-                            table_cache.set(data.table_name, table);
+                            table_cache.set(table_id, table);
                             table_data.players.forEach((player_data) => {
                                 const player = new Player(player_data.name, table);
                                 player.balance = player_data.balance;
