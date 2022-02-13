@@ -172,7 +172,7 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
                 } else {
 
                     // Get the table from cache
-                    const table = table_cache.get(data.table_name);
+                    const table = table_cache.get(table_id);
                     if (!table) throw new Error("There was an unknown error fetching the table from the cache.");
                     if (!!table.socket_map.get(socket)) {
 
@@ -220,7 +220,7 @@ async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
 
                         if (joined && player) {
                             // Update table last used time
-                            db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
+                            db.collection("tables").updateOne({ name: table_id }, { $set: { last_used: Date.now() } });
                             // Connect
                             player.connect(socket);
                             // Save to player map

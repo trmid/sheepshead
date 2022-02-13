@@ -154,7 +154,7 @@ function handle_msg(socket, msg, player) {
                         }));
                     }
                     else {
-                        const table = table_cache.get(data.table_name);
+                        const table = table_cache.get(table_id);
                         if (!table)
                             throw new Error("There was an unknown error fetching the table from the cache.");
                         if (!!table.socket_map.get(socket)) {
@@ -194,7 +194,7 @@ function handle_msg(socket, msg, player) {
                                 }
                             }
                             if (joined && player) {
-                                db.collection("tables").updateOne({ name: data.table_name }, { $set: { last_used: Date.now() } });
+                                db.collection("tables").updateOne({ name: table_id }, { $set: { last_used: Date.now() } });
                                 player.connect(socket);
                                 player_map.set(socket, player);
                                 socket.send(JSON.stringify({
