@@ -1,7 +1,6 @@
 import express from 'express';
 import ws from 'ws';
 import mongo from 'mongodb';
-import fetch from 'node-fetch';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -30,20 +29,6 @@ mongo.MongoClient.connect(mongo_url, async (err, client) => {
     }
 
 });
-
-// keep track of active players to keep heroku server alive
-let players_active = false;
-setInterval(async () => {
-    if (players_active && !process.env.DEBUG) {
-        players_active = false;
-        // Send web request to keep server alive
-        const res = await fetch('https://sheeps-head.herokuapp.com');
-        console.log('Sending wake up: ', res.status);
-    } else {
-        console.log("No active players... Not sending wake up...");
-    }
-}, 5 * 60 * 1000); // 5 min
-
 
 // Setup Web Sockets
 const player_map = new Map<ws, Player>();
@@ -84,7 +69,6 @@ const table_cache = new Map<string, Table>();
 // Functions
 async function handle_msg(socket: ws, msg: ws.Data, player?: Player) {
     if (typeof msg !== 'string') return;
-    players_active = true;
     const data = JSON.parse(msg);
     switch (data.event) {
         case 'ping': {

@@ -86,11 +86,11 @@ window.addEventListener('load', () => {
     /**
      * Change on compile for production
      * 
-     * wss://sheeps-head.herokuapp.com
+     * wss://wss.sheepshead.mypernet.com
      * 
      * ws://localhost:3000
      */
-    socket = new WebSocket("wss://sheeps-head.herokuapp.com");
+    socket = new WebSocket("ws://localhost:3000");
 
     socket.onclose = () => {
         const msg = "You have been disconnected from the server... Please reload the page and try again.";

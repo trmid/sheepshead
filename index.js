@@ -15,7 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ws_1 = __importDefault(require("ws"));
 const mongodb_1 = __importDefault(require("mongodb"));
-const node_fetch_1 = __importDefault(require("node-fetch"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 const mongo_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@sheepshead.oa0bn.mongodb.net/${process.env.MONGO_DBNAME}?retryWrites=true&w=majority`;
@@ -38,17 +37,6 @@ mongodb_1.default.MongoClient.connect(mongo_url, (err, client) => __awaiter(void
         console.error(err);
     }
 }));
-let players_active = false;
-setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
-    if (players_active && !process.env.DEBUG) {
-        players_active = false;
-        const res = yield (0, node_fetch_1.default)('https://sheeps-head.herokuapp.com');
-        console.log('Sending wake up: ', res.status);
-    }
-    else {
-        console.log("No active players... Not sending wake up...");
-    }
-}), 5 * 60 * 1000);
 const player_map = new Map();
 const wss = new ws_1.default.Server({ noServer: true });
 wss.on('connection', socket => {
@@ -78,7 +66,6 @@ function handle_msg(socket, msg, player) {
     return __awaiter(this, void 0, void 0, function* () {
         if (typeof msg !== 'string')
             return;
-        players_active = true;
         const data = JSON.parse(msg);
         switch (data.event) {
             case 'ping': {
