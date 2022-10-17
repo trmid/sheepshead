@@ -90,7 +90,7 @@ window.addEventListener('load', () => {
      * 
      * ws://localhost:3000
      */
-    socket = new WebSocket("ws://localhost:3000");
+    socket = new WebSocket("wss://wss.sheepshead.mypernet.com");
 
     socket.onclose = () => {
         const msg = "You have been disconnected from the server... Please reload the page and try again.";
