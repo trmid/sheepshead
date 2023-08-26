@@ -1,3 +1,3 @@
-# Sheepshead [Play Here!](https://midpoint68.github.io/sheepshead/)
+# Sheepshead [Play Here!](https://trmid.github.io/sheepshead/)
 
 4-Person Multiplayer Sheepshead Card Game
